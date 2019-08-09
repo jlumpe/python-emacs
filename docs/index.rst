@@ -10,6 +10,8 @@ Welcome to python-emacs's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   usage
+   elisp
 
 
 Indices and tables
