@@ -136,7 +136,7 @@ class Emacs:
 		Parameters
 		----------
 		args : tuple
-			Extra arguments to pass the ``emacs`` command.
+			Extra arguments to pass the ``emacsclient`` command.
 
 		Returns
 		-------

@@ -5,7 +5,8 @@ from functools import singledispatch
 
 
 __all__ = ['ElispAstNode', 'Form', 'Literal', 'Symbol', 'Cons', 'List', 'Quote',
-           'Raw', 'to_elisp', 'make_list', 'symbols', 'quote', 'cons']
+           'Raw', 'to_elisp', 'make_list', 'make_alist', 'make_plist',
+           'symbols', 'quote', 'cons']
 
 
 class ElispAstNode:
@@ -13,6 +14,10 @@ class ElispAstNode:
 
 	def __repr__(self):
 		return '<el %s>' % self
+
+	def _quoted(self):
+		"""Get representation within a quote form."""
+		return str(self)
 
 
 class Form(ElispAstNode):
@@ -97,7 +102,10 @@ class Cons(Form):
 		       and other.cdr == self.cdr
 
 	def __str__(self):
-		return '(%s . %s)' % (self.car, self.cdr)
+		return '(cons %s %s)' % (self.car, self.cdr)
+
+	def _quoted(self):
+		return '(%s . %s)' % (self.car._quoted(), self.cdr._quoted())
 
 
 class List(Form):
@@ -118,6 +126,9 @@ class List(Form):
 	def __str__(self):
 		return '(%s)' % ' '.join(map(str, self.items))
 
+	def _quoted(self):
+		return '(%s)' % ' '.join(item._quoted() for item in self.items)
+
 
 class Quote(Form):
 	"""A quoted Elisp form.
@@ -135,7 +146,7 @@ class Quote(Form):
 		return isinstance(other, Quote) and other.form == self.form
 
 	def __str__(self):
-		return "'%s" % self.form
+		return "'%s" % self.form._quoted()
 
 
 class Raw(ElispAstNode):
@@ -236,8 +247,15 @@ def cons(car, cds):
 	return Cons(to_elisp(car), to_elisp(cds))
 
 
-def symbols(*names):
+def symbols(*names, quote=False):
 	"""Create a list of symbols.
+
+	Parameters
+	----------
+	names
+		Symbol names.
+	quote : bool
+		Quote the resulting list.
 
 	Returns
 	-------
@@ -254,8 +272,57 @@ def symbols(*names):
 		else:
 			raise TypeError('Expected str or Symbol, got %s' % type(name).__name__)
 
-	return List(s)
+	l = List(s)
+	return Quote(l) if quote else l
 
+
+def _convert_pairs(pairs):
+	if isinstance(pairs, dict):
+		pairs = pairs.items()
+
+	l = []
+
+	for key, value in pairs:
+		key = Symbol(key) if isinstance(key, str) else to_elisp(key)
+		l.append((key, to_elisp(value)))
+
+	return l
+
+
+def make_alist(pairs, quote=False):
+	"""Create an alist from a set of key-value pairs.
+
+	Parameters
+	----------
+	pairs
+		Key-value pairs as a dict or collections of 2-tuples.
+	quote : bool
+		Quote the resulting form.
+
+	Returns
+	-------
+	ElispAstNode
+	"""
+	alist = List([cons(key, value) for key, value in _convert_pairs(pairs)])
+	return Quote(alist) if quote else alist
+
+
+def make_plist(pairs, quote=False):
+	"""Create a plist from a set of key-value pairs.
+
+	Parameters
+	----------
+	pairs
+		Key-value pairs as a dict or collections of 2-tuples.
+	quote : bool
+		Quote the resulting form.
+
+	Returns
+	-------
+	ElispAstNode
+	"""
+	plist = List([x for kv in _convert_pairs(pairs) for x in kv])
+	return Quote(plist) if quote else plist
 
 
 def print_elisp_string(string):
