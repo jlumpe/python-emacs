@@ -2,6 +2,7 @@
 
 import re
 from functools import singledispatch
+from collections.abc import Mapping
 
 
 __all__ = ['ElispAstNode', 'Form', 'Literal', 'Symbol', 'Cons', 'List', 'Quote',
@@ -282,6 +283,9 @@ def make_alist(pairs, quote=False):
 	"""
 	alist = List([Cons(key, value) for key, value in _convert_pairs(pairs)])
 	return Quote(alist) if quote else alist
+
+# Convert mapping objects to alists
+to_elisp.register(Mapping, make_alist)
 
 
 def make_plist(pairs, quote=False):
