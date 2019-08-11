@@ -1,3 +1,6 @@
+.. py:currentmodule:: emacs.elisp.ast
+
+
 Representing Emacs lisp code in Python
 ======================================
 
@@ -50,8 +53,18 @@ Python lists are converted to quoted Elisp lists, while tuples are left unquoted
    <el ("a" "b" "c")>
 
 
-Elements of lists/tuples are recursively converted using :meth:`to_elisp` if
-they are not already instances of :class:`ElispAstNode`.
+Python dicts and other mapping types are converted using :func:`make_alist` (see
+below):
+
+.. doctest::
+
+   >>> el.to_elisp({'a': 1, 'b': 2})
+   <el ((cons a 1) (cons b 2))>
+
+
+Elements of composite data types (lists, tuples, dicts) are recursively
+converted using :meth:`to_elisp` if they are not already instances of
+:class:`ElispAstNode`.
 
 You can use :func:`quote` to quote a value. It will also convert strings to
 quoted symbols:
@@ -69,13 +82,21 @@ quoted symbols:
    <el 'foo>
 
 
-Other shortcuts are :func:`cons` to create a cons cell, or :func:`symbols` to
-create a list of symbols:
+A a form that must be constructed directly because it has no Python equivalent
+is the cons cell, represented with the class :class:`Cons`:
 
 .. doctest::
 
-   >>> el.cons(el.Symbol('a'), 1)
+   >>> el.Cons(el.Symbol('a'), 1)
    <el (cons a 1)>
+
+   >>> el.quote(el.Cons(el.Symbol('a'), 1))
+   <el '(a . 1)>
+
+
+The :func:`symbols` function can be used to create a list of symbols:
+
+.. doctest::
 
    >>> el.symbols('a', 'b', 'c')
    <el (a b c)>
@@ -109,7 +130,10 @@ be inserted verbatim in the given location:
 Using Elisp forms
 -----------------
 
-Elisp forms can be passed to :meth:`Elisp.eval` and :meth:`Elisp.getresult` for
+.. py:currentmodule:: emacs.emacs
+
+
+Elisp forms can be passed to :meth:`Emacs.eval` and :meth:`Emacs.getresult` for
 execution. You can also convert them to strings to produce (hopefully)
 syntactically-correct Elisp code.
 
@@ -117,9 +141,12 @@ syntactically-correct Elisp code.
 Elisp DSL
 ---------
 
+.. py:currentmodule:: emacs.elisp.ast
+
+
 This package also includes an unholy abomination of a DSL that lets you write
 Elisp code in Python. The DSL is implemented through a singleton object which
-is importable as :data:`emacs.elisp.E`::
+is importable as :data:`emacs.elisp.E <emacs.elisp.dsl.E>`::
 
    >>> from emacs.elisp import E
 
@@ -163,7 +190,7 @@ Symbols can be called as functions, generating Elisp function calls:
 
 
 Additionally, the ``Q``, ``C``, ``S``, and ``R`` methods are aliases for the
-:func:`quote`, :func:`cons`, :func:`symbols`, and :class:`Raw`, respectively.
+:func:`quote`, :class:`Cons`, :func:`symbols`, and :class:`Raw`, respectively.
 
 Using just the ``E`` object, it is possible to write complex Elisp forms:
 

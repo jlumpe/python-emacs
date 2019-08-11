@@ -1,3 +1,6 @@
+.. py:currentmodule:: emacs.emacs
+
+
 Basic usage
 ===========
 

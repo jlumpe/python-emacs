@@ -7,9 +7,7 @@ from .ast import *
 
 
 class ElispSingleton:
-	"""Singleton object which implements the Elisp DSL.
-
-
+	"""Class of the singleton :data:`.E`.
 	"""
 
 	__instance = None
@@ -44,4 +42,5 @@ class ElispSingleton:
 	R = staticmethod(Raw)
 
 
+#: Singleton object which implements the Elisp DSL.
 E = ElispSingleton()

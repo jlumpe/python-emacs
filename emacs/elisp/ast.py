@@ -211,7 +211,8 @@ def quote(value):
 
 	Parameters
 	----------
-	value : Elisp value to quote.
+	value
+		Elisp value to quote.
 
 	Returns
 	-------

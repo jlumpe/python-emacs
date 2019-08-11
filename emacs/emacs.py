@@ -66,7 +66,7 @@ class EmacsException(Exception):
 
 		Parameters
 		----------
-		src : str or emacs.elisp.ElispAstNode
+		src : str or emacs.elisp.ast.ElispAstNode
 			Source code which was to be evaluated.
 		cpe : subprocess.CalledProcessError
 
@@ -273,7 +273,8 @@ class Emacs:
 
 		Returns
 		-------
-		Parsed value.
+		object
+			Parsed value.
 
 		Raises
 		------

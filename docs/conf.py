@@ -35,6 +35,7 @@ extensions = [
 	'sphinx.ext.viewcode',
 	'sphinx.ext.napoleon',
 	'sphinx.ext.doctest',
+	'sphinx.ext.intersphinx',
 ]
 
 # The master toctree document.
@@ -53,6 +54,11 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+
+# Warn on broken cross references
+nitpicky = True
+
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 
 # -- Options for HTML output -------------------------------------------------
