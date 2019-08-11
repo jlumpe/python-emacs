@@ -5,8 +5,7 @@ from functools import singledispatch
 
 
 __all__ = ['ElispAstNode', 'Form', 'Literal', 'Symbol', 'Cons', 'List', 'Quote',
-           'Raw', 'to_elisp', 'make_list', 'make_alist', 'make_plist',
-           'symbols', 'quote', 'cons']
+           'Raw', 'to_elisp', 'make_alist', 'make_plist', 'symbols', 'quote']
 
 
 class ElispAstNode:
@@ -200,22 +199,10 @@ for type_ in Literal.PY_TYPES:
 # Convert Python lists to quoted Emacs lists
 @to_elisp.register(list)
 def _py_list_to_el_list(pylist):
-	return Quote(make_list(pylist))
+	return Quote(List(pylist))
 
 
-@to_elisp.register(tuple)
-def make_list(items):
-	"""Make an Elisp list from a Python sequence, first converting its elements to Elisp.
-
-	Parameters
-	----------
-	items : Iterable of objects to convert to list.
-
-	Returns
-	-------
-	.List
-	"""
-	return List(map(to_elisp, items))
+to_elisp.register(tuple, List)
 
 
 def quote(value):
@@ -235,16 +222,6 @@ def quote(value):
 		form = to_elisp(value)
 
 	return Quote(form)
-
-
-def cons(car, cds):
-	"""Create a Cons cell, converting arguments.
-
-	Returns
-	-------
-	.Cons
-	"""
-	return Cons(to_elisp(car), to_elisp(cds))
 
 
 def symbols(*names, quote=False):
@@ -303,7 +280,7 @@ def make_alist(pairs, quote=False):
 	-------
 	ElispAstNode
 	"""
-	alist = List([cons(key, value) for key, value in _convert_pairs(pairs)])
+	alist = List([Cons(key, value) for key, value in _convert_pairs(pairs)])
 	return Quote(alist) if quote else alist
 
 

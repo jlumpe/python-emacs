@@ -39,7 +39,7 @@ class ElispSingleton:
 		return to_elisp(value)
 
 	Q = staticmethod(quote)
-	C = staticmethod(cons)
+	C = staticmethod(Cons)
 	S = staticmethod(symbols)
 	R = staticmethod(Raw)
 
