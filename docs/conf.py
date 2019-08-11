@@ -37,6 +37,9 @@ extensions = [
 	'sphinx.ext.doctest',
 ]
 
+# The master toctree document.
+master_doc = 'index'
+
 doctest_global_setup = '''
 from emacs import Emacs, EmacsException
 import emacs.elisp as el
