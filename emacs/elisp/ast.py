@@ -169,13 +169,16 @@ class Raw(ElispAstNode):
 
 
 @singledispatch
-def to_elisp(value):
+def to_elisp(value, **kw):
 	"""Convert a Python value to an Elisp AST node.
 
 	Parameters
 	----------
 	value
 		Python value to convert.
+	dict_format : str
+		Elisp format to convert dicts/mappings to. Either ``'alist'`` (default)
+		or ``'plist'``.
 
 	Returns
 	-------
@@ -188,31 +191,40 @@ def to_elisp(value):
 
 @to_elisp.register(bool)
 @to_elisp.register(type(None))
-def _bool_to_elisp(value):
+def _bool_to_elisp(value, **kw):
 	return Symbol('t') if value else Symbol('nil')
 
 
+
+def _literal_to_elisp(value, **kw):
+	return Literal(value)
+
 # Register literal types
 for type_ in Literal.PY_TYPES:
-	to_elisp.register(type_, Literal)
+	to_elisp.register(type_, _literal_to_elisp)
+
+
+@to_elisp.register(tuple)
+def _make_el_list(iterable, **kw):
+	return List([to_elisp(item, **kw) for item in iterable])
 
 
 # Convert Python lists to quoted Emacs lists
 @to_elisp.register(list)
-def _py_list_to_el_list(pylist):
-	return Quote(List(pylist))
+def _py_list_to_el_list(pylist, **kw):
+	return Quote(_make_el_list(pylist, **kw))
 
 
-to_elisp.register(tuple, List)
-
-
-def quote(value):
+def quote(value, **kw):
 	"""Quote value, converting Python strings to symbols.
 
 	Parameters
 	----------
 	value
 		Elisp value to quote.
+	kw
+		Keyword arguments passed to :func:`.to_elisp` if value needs to be
+		converted.
 
 	Returns
 	-------
@@ -221,7 +233,7 @@ def quote(value):
 	if isinstance(value, str):
 		form = Symbol(value)
 	else:
-		form = to_elisp(value)
+		form = to_elisp(value, **kw)
 
 	return Quote(form)
 
@@ -255,7 +267,7 @@ def symbols(*names, quote=False):
 	return Quote(l) if quote else l
 
 
-def _convert_pairs(pairs):
+def _convert_pairs(pairs, kw):
 	if isinstance(pairs, dict):
 		pairs = pairs.items()
 
@@ -263,12 +275,12 @@ def _convert_pairs(pairs):
 
 	for key, value in pairs:
 		key = Symbol(key) if isinstance(key, str) else to_elisp(key)
-		l.append((key, to_elisp(value)))
+		l.append((key, to_elisp(value, **kw)))
 
 	return l
 
 
-def make_alist(pairs, quote=False):
+def make_alist(pairs, quote=False, **kw):
 	"""Create an alist from a set of key-value pairs.
 
 	Parameters
@@ -277,19 +289,18 @@ def make_alist(pairs, quote=False):
 		Key-value pairs as a dict or collections of 2-tuples.
 	quote : bool
 		Quote the resulting form.
+	kw
+		Keyword arguments passed to :func:`to_elisp` to convert mapping values.
 
 	Returns
 	-------
 	ElispAstNode
 	"""
-	alist = List([Cons(key, value) for key, value in _convert_pairs(pairs)])
+	alist = List([Cons(key, value) for key, value in _convert_pairs(pairs, kw)])
 	return Quote(alist) if quote else alist
 
-# Convert mapping objects to alists
-to_elisp.register(Mapping, make_alist)
 
-
-def make_plist(pairs, quote=False):
+def make_plist(pairs, quote=False, **kw):
 	"""Create a plist from a set of key-value pairs.
 
 	Parameters
@@ -298,13 +309,25 @@ def make_plist(pairs, quote=False):
 		Key-value pairs as a dict or collections of 2-tuples.
 	quote : bool
 		Quote the resulting form.
+	kw
+		Keyword arguments passed to :func:`to_elisp` to convert mapping values.
 
 	Returns
 	-------
 	ElispAstNode
 	"""
-	plist = List([x for kv in _convert_pairs(pairs) for x in kv])
+	plist = List([x for kv in _convert_pairs(pairs, kw) for x in kv])
 	return Quote(plist) if quote else plist
+
+
+@to_elisp.register(Mapping)
+def _mapping_to_elisp(value, **kw):
+	fmt = kw.get('dict_format', 'alist')
+	if fmt == 'alist':
+		return make_alist(value, **kw)
+	if fmt == 'plist':
+		return make_plist(value, **kw)
+	raise ValueError('Invalid value for dict_format argument: %r' % fmt)
 
 
 def print_elisp_string(string):
@@ -319,5 +342,3 @@ def print_elisp_string(string):
 	str
 	"""
 	return '"%s"' % re.sub(r'([\\\"])', r'\\\1', string)
-
-
