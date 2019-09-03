@@ -4,6 +4,7 @@ import sys
 import os
 from subprocess import run, PIPE, CalledProcessError
 import json
+from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 
 from .elisp import ElispAstNode, E, Raw
@@ -251,14 +252,35 @@ class Emacs:
 		"""Get result by reading from stdout."""
 		raise NotImplementedError()
 
-	def _result_from_tmpfile(self, form, **kwargs):
-		"""Get result by having Emacs write to tmp file and reading from Python."""
+	@contextmanager
+	def _tmpfile(self):
+		"""Make a temporary file to write/read emacs output to/from.
+
+		Returns a context manager which gives the path to the temporary file on
+		enter and removes the file on exit.
+		"""
 		with TemporaryDirectory() as tmpdir:
-			fname = os.path.join(tmpdir, 'emacs-output')
-			el = E.with_temp_file(fname, E.insert(form))
-			self.eval(el)
-			with open(fname) as fobj:
-				return fobj.read()
+			yield os.path.join(tmpdir, 'emacs-output')
+
+	def write_result(self, source, path):
+		"""Have Emacs evaluate an elisp form and write its result to a file.
+
+		Parameters
+		----------
+		source : str or list
+			Elisp code to evaluate.
+		path : str
+			File path to write to.
+		"""
+		el = E.with_temp_file(str(path), E.insert(source))
+		self.eval(el)
+
+	def _json_from_tmpfile(self, form, encoding='utf8'):
+		"""Write result of evaluating form to temporary file and parse as JSON."""
+		with self._tmpfile() as tmpfile:
+			self.write_result(form, tmpfile)
+			with open(tmpfile, encoding=encoding) as f:
+				return json.load(f)
 
 	def getresult(self, source, is_json=False, **kwargs):
 		"""Get parsed result from evaluating the Elisp code.
@@ -289,6 +311,4 @@ class Emacs:
 				E.json_encode(form)
 			)
 
-		result = self._result_from_tmpfile(form, **kwargs)
-
-		return json.loads(result)
+		return self._json_from_tmpfile(form, **kwargs)
