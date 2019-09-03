@@ -6,6 +6,7 @@ from subprocess import run, PIPE, CalledProcessError
 import json
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
+import logging
 
 from .elisp import ElispAstNode, E, Raw
 
@@ -101,18 +102,16 @@ class Emacs:
 		Base command to run Emacs.
 	client : bool
 	    Whether the command runs ``emacsclient``.
-	verbose : int
-		1 to echo stderr of Emacs command, 2 to echo stdout. 0 turns off.
 	"""
 
-	def __init__(self, cmd, client=False, verbose=1):
+	def __init__(self, cmd, client=False, logger=None):
 		if isinstance(cmd, str):
 			self.cmd = [cmd]
 		else:
 			self.cmd = list(cmd)
 
 		self.is_client = client
-		self.verbose = verbose
+		self.logger = logger or logging.getLogger(__name__)
 
 	@classmethod
 	def batch(cls, args=(), **kwargs):
@@ -167,15 +166,15 @@ class Emacs:
 		subprocess.CalledProcessError
 			If ``check=True`` and return code is nonzero.
 		"""
-		if verbose is None:
-			verbose = self.verbose
+		cmd = [*self.cmd, *args]
 
-		result = run([*self.cmd, *args], check=False, stdout=PIPE, stderr=PIPE)
+		self.logger.info(cmd)
+		result = run(cmd, check=False, stdout=PIPE, stderr=PIPE)
 
-		if verbose >= 1 and result.stderr:
-			print(result.stderr.decode(), file=sys.stderr)
-		if verbose >= 2 and result.stdout:
-			print(result.stdout.decode())
+		if result.stderr:
+			self.logger.warning(result.stderr.decode())
+		if result.stdout:
+			self.logger.debug(result.stdout.decode())
 
 		if check:
 			result.check_returncode()
