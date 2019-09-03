@@ -75,12 +75,12 @@ class Symbol(Form):
 		"""Produce a function call node from this symbol."""
 		items = [self, *map(to_elisp, args)]
 		for key, value in kwargs.items():
-			items.extend([Symbol(':' + key), to_elisp(value)])
+			s = Symbol(':' + key.replace('_', '-'))
+			items.extend([s, to_elisp(value)])
 		return List(items)
 
 	def __str__(self):
 		return self.name
-
 
 
 class Cons(Form):
