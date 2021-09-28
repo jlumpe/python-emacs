@@ -1,5 +1,6 @@
 # python-emacs
-[![Build Status](https://travis-ci.org/jlumpe/python-emacs.svg?branch=master)](https://travis-ci.org/jlumpe/python-emacs) [![Documentation Status](https://readthedocs.org/projects/python-emacs/badge/?version=latest)](https://python-emacs.readthedocs.io/en/latest/?badge=latest)
+[![CI](https://github.com/jlumpe/python-emacs/actions/workflows/ci.yml/badge.svg)](https://github.com/jlumpe/python-emacs/actions/workflows/ci.yml)
+[![Documentation Status](https://readthedocs.org/projects/python-emacs/badge/?version=latest)](https://python-emacs.readthedocs.io/en/latest/?badge=latest)
 
 Python interface to GNU Emacs.
 
