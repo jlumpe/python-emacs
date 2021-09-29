@@ -1,9 +1,9 @@
-"""Test Elisp AST node classes."""
+"""Test Elisp AST classes."""
 
 import emacs.elisp as el
 
 
-# Some reusable node constants
+# Some reusable expression constants
 T = el.Symbol('t')
 NIL = el.Symbol('nil')
 
@@ -18,11 +18,11 @@ LISTS = list(map(el.List, [
 QUOTES = [el.Quote(n) for l in [SYMBOLS, LITERALS, CONS, LISTS] for n in l[:2]]
 RAW = [el.Raw('(+ 1 2)'), el.Raw('(message "hello")')]
 
-NODES = SYMBOLS + LITERALS + CONS + LISTS
+EXPRS = SYMBOLS + LITERALS + CONS + LISTS
 
 
 def test_equality():
-	"""Test equality of AST nodes."""
+	"""Test equality of expressions."""
 
 	for l in LITERALS:
 		assert l == el.Literal(l.pyvalue)
@@ -37,11 +37,11 @@ def test_equality():
 		assert l == el.List(l.items)
 
 	for q in QUOTES:
-		assert q == el.Quote(q.form)
+		assert q == el.Quote(q.expr)
 
 	# Check inequality - these should all be pairwise unequal
-	for i, item1 in enumerate(NODES):
-		for item2 in NODES[i + 1:]:
+	for i, item1 in enumerate(EXPRS):
+		for item2 in EXPRS[i + 1:]:
 			assert item1 != item2
 
 			# Check quoted versions of pair as well
@@ -76,8 +76,8 @@ def test_convert():
 	d = {'a': 1, 'b': 'foo', 'c': True}
 	assert el.to_elisp(d) == el.make_alist(d)
 
-	# Should leave existing nodes unchanged
-	for n in NODES:
+	# Should leave existing exprs unchanged
+	for n in EXPRS:
 		assert el.to_elisp(n) == n
 
 

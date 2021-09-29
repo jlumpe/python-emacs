@@ -25,7 +25,7 @@ class ElispDSL:
 
 		return object.__getattribute__(self, name)
 
-	def __call__(self, value) -> ElispAstNode:
+	def __call__(self, value) -> Expr:
 		"""Calling as function converts value."""
 		return to_elisp(value)
 

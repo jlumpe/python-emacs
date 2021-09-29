@@ -9,45 +9,45 @@ from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 import logging
 
-from .elisp import ElispAstNode, E, Raw
+from .elisp import Expr, E, Raw
 
 
-StrOrNode = Union[str, ElispAstNode]
-StrOrNodeOrList = Union[StrOrNode, Sequence[StrOrNode]]
+StrOrExpr = Union[str, Expr]
+StrOrExprOrList = Union[StrOrExpr, Sequence[StrOrExpr]]
 
 
-def _get_forms_seq(seq: StrOrNode) -> List[ElispAstNode]:
-	forms = []
+def _get_exprs_seq(seq: StrOrExpr) -> List[Expr]:
+	exprs = []
 	for item in seq:
 		if isinstance(item, str):
-			forms.append(Raw(item))
-		elif isinstance(item, ElispAstNode):
-			forms.append(item)
+			exprs.append(Raw(item))
+		elif isinstance(item, Expr):
+			exprs.append(item)
 		else:
-			raise TypeError('Sequence elements must be strings or AST nodes')
-	return forms
+			raise TypeError('Sequence elements must be strings or Expr instances.')
+	return exprs
 
 
-def get_form(src: StrOrNodeOrList) -> ElispAstNode:
-	"""Get Elisp form from string, AST node, or sequence of these."""
-	if isinstance(src, ElispAstNode):
+def get_expr(src: StrOrExprOrList) -> Expr:
+	"""Get Elisp progn from string, Expr, or sequence of these."""
+	if isinstance(src, Expr):
 		return src
 
 	if isinstance(src, str):
 		return Raw(src)
 
-	return E.progn(*_get_forms_seq(src))
+	return E.progn(*_get_exprs_seq(src))
 
 
-def get_forms_list(src: StrOrNodeOrList) -> List[ElispAstNode]:
-	"""Get source as list of forms from string, AST node, or sequence of these."""
-	if isinstance(src, ElispAstNode):
+def get_exprs_list(src: StrOrExprOrList) -> List[Expr]:
+	"""Get source as list of expression from string, AST node, or sequence of these."""
+	if isinstance(src, Expr):
 		return [src]
 
 	if isinstance(src, str):
 		return [Raw(src)]
 
-	return _get_forms_seq(src)
+	return _get_exprs_seq(src)
 
 
 class EmacsException(Exception):
@@ -62,17 +62,17 @@ class EmacsException(Exception):
 	stderr
 		Process' stderr.
 	"""
-	src: StrOrNode
+	src: StrOrExpr
 	stdout: str
 	stderr: str
 
-	def __init__(self, src: StrOrNode, stdout: str = None, stderr: str = None):
+	def __init__(self, src: StrOrExpr, stdout: str = None, stderr: str = None):
 		self.src = src
 		self.stdout = stdout
 		self.stderr = stderr
 
 	@classmethod
-	def from_calledprocess(cls, src: StrOrNode, cpe: CalledProcessError) -> 'EmacsException':
+	def from_calledprocess(cls, src: StrOrExpr, cpe: CalledProcessError) -> 'EmacsException':
 		"""Create from a CalledProcessError.
 
 		Parameters
@@ -199,13 +199,13 @@ class Emacs:
 		"""
 		return self._getoutput(self.run(args, **kwargs))
 
-	def eval(self, source: StrOrNodeOrList, process: bool = False, **kwargs) -> Union[str, CompletedProcess]:
+	def eval(self, source: StrOrExprOrList, process: bool = False, **kwargs) -> Union[str, CompletedProcess]:
 		"""Evaluate ELisp source code and return output.
 
 		Parameters
 		----------
 		source
-			Elisp code. If a list of strings/forms will be enclosed in ``progn``.
+			Elisp code. If a list of strings/expressions will be enclosed in ``progn``.
 		process
 			If True return the :class:`subprocess.CompletedProcess` object,
 			otherwise just return the value of ``stdout``.
@@ -223,7 +223,7 @@ class Emacs:
 		.EmacsException
 			If an error occurred trying to execute the elsip code.
 		"""
-		source = str(get_form(source))
+		source = str(get_expr(source))
 
 		try:
 			result = self.run(['--eval', source], **kwargs)
@@ -235,7 +235,7 @@ class Emacs:
 		else:
 			return self._getoutput(result)
 
-	def _result_from_stdout(self, form: ElispAstNode, **kwargs) -> str:
+	def _result_from_stdout(self, expr: Expr, **kwargs) -> str:
 		"""Get result by reading from stdout."""
 		raise NotImplementedError()
 
@@ -249,8 +249,8 @@ class Emacs:
 		with TemporaryDirectory() as tmpdir:
 			yield os.path.join(tmpdir, 'emacs-output')
 
-	def write_result(self, source: StrOrNodeOrList, path: str):
-		"""Have Emacs evaluate an elisp form and write its result to a file.
+	def write_result(self, source: StrOrExprOrList, path: str):
+		"""Have Emacs evaluate an elisp expression and write its result to a file.
 
 		Parameters
 		----------
@@ -262,14 +262,14 @@ class Emacs:
 		el = E.with_temp_file(str(path), E.insert(source))
 		self.eval(el)
 
-	def _json_from_tmpfile(self, form: StrOrNodeOrList, encoding: str = 'utf8'):
-		"""Write result of evaluating form to temporary file and parse as JSON."""
+	def _json_from_tmpfile(self, expr: StrOrExprOrList, encoding: str = 'utf8'):
+		"""Write result of evaluating expression to temporary file and parse as JSON."""
 		with self._tmpfile() as tmpfile:
-			self.write_result(form, tmpfile)
+			self.write_result(expr, tmpfile)
 			with open(tmpfile, encoding=encoding) as f:
 				return json.load(f)
 
-	def getresult(self, source: StrOrNodeOrList, is_json: str = False, **kwargs):
+	def getresult(self, source: StrOrExprOrList, is_json: str = False, **kwargs):
 		"""Get parsed result from evaluating the Elisp code.
 
 		Parameters
@@ -290,12 +290,12 @@ class Emacs:
 		.EmacsException
 			If an error occurred trying to execute the elsip code.
 		"""
-		form = get_form(source)
+		expr = get_expr(source)
 
 		if not is_json:
-			form = E.progn(
+			expr = E.progn(
 				E.require(E.Q('json')),
-				E.json_encode(form)
+				E.json_encode(expr)
 			)
 
-		return self._json_from_tmpfile(form, **kwargs)
+		return self._json_from_tmpfile(expr, **kwargs)

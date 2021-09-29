@@ -6,31 +6,27 @@ from functools import singledispatch
 from collections.abc import Mapping
 
 
-__all__ = ['ElispAstNode', 'Form', 'Literal', 'Symbol', 'Cons', 'List', 'Quote',
+__all__ = ['Expr', 'Literal', 'Symbol', 'Cons', 'List', 'Quote',
            'Raw', 'to_elisp', 'make_alist', 'make_plist', 'symbols', 'quote']
 
 
-class ElispAstNode:
-	"""Abstract base class for Elisp AST nodes."""
+class Expr:
+	"""Base for classes which represent Elisp expressions."""
 
 	def __str__(self):
-		"""Render the form as elisp code."""
+		"""Render the expression as elisp code."""
 		raise NotImplementedError()
 
 	def __repr__(self):
 		return '<el %s>' % self
 
 	def _quoted(self) -> str:
-		"""Get representation within a quote form."""
+		"""Get representation within a quoted expression."""
 		return str(self)
 
 
-class Form(ElispAstNode):
-	"""Pretty much everything is a form, right?"""
-
-
-class Literal(Form):
-	"""Basic self-evaluating forms like strings, numbers, etc.
+class Literal(Expr):
+	"""Basic self-evaluating expressions like strings, numbers, etc.
 
 	Attributes
 	----------
@@ -58,7 +54,7 @@ class Literal(Form):
 			return str(self.pyvalue)
 
 
-class Symbol(Form):
+class Symbol(Expr):
 	"""Elisp symbol."""
 
 	name: str
@@ -75,7 +71,7 @@ class Symbol(Form):
 		return self.name.startswith(':') or self.name in ('nil', 't')
 
 	def __call__(self, *args, **kwargs) -> 'List':
-		"""Produce a function call node from this symbol."""
+		"""Produce a function call expression from this symbol."""
 		items = [self, *map(to_elisp, args)]
 		for key, value in kwargs.items():
 			s = Symbol(':' + key.replace('_', '-'))
@@ -86,11 +82,11 @@ class Symbol(Form):
 		return self.name
 
 
-class Cons(Form):
+class Cons(Expr):
 	"""A cons cell."""
 
-	car: ElispAstNode
-	cdr: ElispAstNode
+	car: Expr
+	cdr: Expr
 
 	def __init__(self, car, cdr):
 		self.car = to_elisp(car)
@@ -108,7 +104,7 @@ class Cons(Form):
 		return '(%s . %s)' % (self.car._quoted(), self.cdr._quoted())
 
 
-class List(Form):
+class List(Expr):
 	"""A list...
 
 	Attributes
@@ -117,7 +113,7 @@ class List(Form):
 		Items in the list
 	"""
 
-	items: Tuple[ElispAstNode, ...]
+	items: Tuple[Expr, ...]
 
 	def __init__(self, items: Iterable):
 		self.items = tuple(map(to_elisp, items))
@@ -132,26 +128,26 @@ class List(Form):
 		return '(%s)' % ' '.join(item._quoted() for item in self.items)
 
 
-class Quote(Form):
-	"""A quoted Elisp form.
+class Quote(Expr):
+	"""A quoted Elisp expression.
 
 	Attributes
 	----------
-	form
-		The quoted Elisp form.
+	expr
+		The quoted Elisp expression.
 	"""
 
-	def __init__(self, form: ElispAstNode):
-		self.form = to_elisp(form)
+	def __init__(self, expr: Expr):
+		self.expr = to_elisp(expr)
 
 	def __eq__(self, other):
-		return isinstance(other, Quote) and other.form == self.form
+		return isinstance(other, Quote) and other.expr == self.expr
 
 	def __str__(self):
-		return "'%s" % self.form._quoted()
+		return "'%s" % self.expr._quoted()
 
 
-class Raw(ElispAstNode):
+class Raw(Expr):
 	"""Just raw Elisp code to be pasted in at this point.
 
 	Attributes
@@ -173,8 +169,8 @@ class Raw(ElispAstNode):
 
 
 @singledispatch
-def to_elisp(value, **kw) -> ElispAstNode:
-	"""Convert a Python value to an Elisp AST node.
+def to_elisp(value, **kw) -> Expr:
+	"""Convert a Python value to an Elisp expression.
 
 	Parameters
 	----------
@@ -186,9 +182,9 @@ def to_elisp(value, **kw) -> ElispAstNode:
 
 	Returns
 	-------
-	.ElispAstNode
+	.Expr
 	"""
-	if isinstance(value, ElispAstNode):
+	if isinstance(value, Expr):
 		return value
 	raise TypeError('Cannot convert object of type %s to Elisp' % type(value).__name__)
 
@@ -219,7 +215,7 @@ def _py_list_to_el_list(pylist, **kw):
 	return Quote(_make_el_list(pylist, **kw))
 
 
-def quote(value: Union[str, ElispAstNode], **kw) -> Quote:
+def quote(value: Union[str, Expr], **kw) -> Quote:
 	"""Quote value, converting Python strings to symbols.
 
 	Parameters
@@ -230,11 +226,11 @@ def quote(value: Union[str, ElispAstNode], **kw) -> Quote:
 		Keyword arguments passed to :func:`.to_elisp` if value needs to be converted.
 	"""
 	if isinstance(value, str):
-		form = Symbol(value)
+		expr = Symbol(value)
 	else:
-		form = to_elisp(value, **kw)
+		expr = to_elisp(value, **kw)
 
-	return Quote(form)
+	return Quote(expr)
 
 
 def symbols(*names: str, quote: bool = False) -> List:
@@ -262,7 +258,7 @@ def symbols(*names: str, quote: bool = False) -> List:
 	return Quote(l) if quote else l
 
 
-def _convert_pairs(pairs, kw) -> PyList[Tuple[ElispAstNode, ElispAstNode]]:
+def _convert_pairs(pairs, kw) -> PyList[Tuple[Expr, Expr]]:
 	if isinstance(pairs, dict):
 		pairs = pairs.items()
 
@@ -274,7 +270,7 @@ def _convert_pairs(pairs, kw) -> PyList[Tuple[ElispAstNode, ElispAstNode]]:
 
 	return l
 
-def make_alist(pairs: Union[Mapping, Iterable[Tuple]], quote: bool = False, **kw) -> ElispAstNode:
+def make_alist(pairs: Union[Mapping, Iterable[Tuple]], quote: bool = False, **kw) -> Expr:
 	"""Create an alist from a set of key-value pairs.
 
 	Parameters
@@ -282,7 +278,7 @@ def make_alist(pairs: Union[Mapping, Iterable[Tuple]], quote: bool = False, **kw
 	pairs
 		Key-value pairs as a dict or collections of 2-tuples.
 	quote
-		Quote the resulting form.
+		Quote the resulting expression.
 	kw
 		Keyword arguments passed to :func:`to_elisp` to convert mapping values.
 	"""
@@ -290,7 +286,7 @@ def make_alist(pairs: Union[Mapping, Iterable[Tuple]], quote: bool = False, **kw
 	return Quote(alist) if quote else alist
 
 
-def make_plist(pairs: Union[Mapping, Tuple[Any, Any]], quote: bool = False, **kw) -> ElispAstNode:
+def make_plist(pairs: Union[Mapping, Tuple[Any, Any]], quote: bool = False, **kw) -> Expr:
 	"""Create a plist from a set of key-value pairs.
 
 	Parameters
@@ -298,7 +294,7 @@ def make_plist(pairs: Union[Mapping, Tuple[Any, Any]], quote: bool = False, **kw
 	pairs
 		Key-value pairs as a dict or collections of 2-tuples.
 	quote
-		Quote the resulting form.
+		Quote the resulting expression.
 	kw
 		Keyword arguments passed to :func:`to_elisp` to convert mapping values.
 	"""
