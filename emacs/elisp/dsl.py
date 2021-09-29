@@ -6,16 +6,9 @@ God help us all.
 from .ast import *
 
 
-class ElispSingleton:
-	"""Class of the singleton :data:`.E`.
+class ElispDSL:
+	"""Implements the ELisp DSL.
 	"""
-
-	__instance = None
-
-	def __new__(cls):
-		if cls.__instance is None:
-			cls.__instance = object.__new__(cls)
-		return cls.__instance
 
 	def __getitem__(self, name) -> Symbol:
 		"""Indexing with string gets a Symbol."""
@@ -42,5 +35,5 @@ class ElispSingleton:
 	R = staticmethod(Raw)
 
 
-#: Singleton object which implements the Elisp DSL.
-E = ElispSingleton()
+#: Instance of :class:`ElispDSL` for easy importing.
+E = ElispDSL()
