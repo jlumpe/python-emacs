@@ -1,8 +1,9 @@
 """Interface with Emacs and run commands."""
 
 import sys
+from typing import Optional, Union, Sequence, List
 import os
-from subprocess import run, PIPE, CalledProcessError
+from subprocess import run, PIPE, CalledProcessError, CompletedProcess
 import json
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
@@ -11,7 +12,11 @@ import logging
 from .elisp import ElispAstNode, E, Raw
 
 
-def _get_forms_seq(seq):
+StrOrNode = Union[str, ElispAstNode]
+StrOrNodeOrList = Union[StrOrNode, Sequence[StrOrNode]]
+
+
+def _get_forms_seq(seq: StrOrNode) -> List[ElispAstNode]:
 	forms = []
 	for item in seq:
 		if isinstance(item, str):
@@ -23,7 +28,7 @@ def _get_forms_seq(seq):
 	return forms
 
 
-def get_form(src):
+def get_form(src: StrOrNodeOrList) -> ElispAstNode:
 	"""Get Elisp form from string, AST node, or sequence of these."""
 	if isinstance(src, ElispAstNode):
 		return src
@@ -34,7 +39,7 @@ def get_form(src):
 	return E.progn(*_get_forms_seq(src))
 
 
-def get_forms_list(src):
+def get_forms_list(src: StrOrNodeOrList) -> List[ElispAstNode]:
 	"""Get source as list of forms from string, AST node, or sequence of these."""
 	if isinstance(src, ElispAstNode):
 		return [src]
@@ -52,29 +57,29 @@ class EmacsException(Exception):
 	----------
 	src
 		Elisp code the process was trying to evaluate.
-	stdout : str
+	stdout
 		Process' stdout.
-	stderr : str
+	stderr
 		Process' stderr.
 	"""
-	def __init__(self, src, stdout=None, stderr=None):
+	src: StrOrNode
+	stdout: str
+	stderr: str
+
+	def __init__(self, src: StrOrNode, stdout: str = None, stderr: str = None):
 		self.src = src
 		self.stdout = stdout
 		self.stderr = stderr
 
 	@classmethod
-	def from_calledprocess(cls, src, cpe):
+	def from_calledprocess(cls, src: StrOrNode, cpe: CalledProcessError) -> 'EmacsException':
 		"""Create from a CalledProcessError.
 
 		Parameters
 		----------
-		src : str or emacs.elisp.ast.ElispAstNode
+		src
 			Source code which was to be evaluated.
-		cpe : subprocess.CalledProcessError
-
-		Returns
-		-------
-		.EmacsException
+		cpe
 		"""
 		exc = cls(src, stdout=cpe.stdout, stderr=cpe.stderr)
 		exc.__cause__ = cpe
@@ -89,11 +94,11 @@ class Emacs:
 
 	Attributes
 	----------
-	cmd : str or list[str]
+	cmd
 		Base command to run Emacs.
-	is_client : bool
+	is_client
 	    Whether the command runs ``emacsclient``.
-	verbose : int
+	verbose
 		1 to echo stderr of Emacs command, 2 to echo stdout. 0 turns off.
 
 	Parameters
@@ -103,8 +108,12 @@ class Emacs:
 	client : bool
 	    Whether the command runs ``emacsclient``.
 	"""
+	cmd: Union[str, List[str]]
+	is_client: bool
+	verbose: int
+	logger: logging.Logger
 
-	def __init__(self, cmd, client=False, logger=None):
+	def __init__(self, cmd: Union[str, List[str]], client: bool = False, logger: Optional[logging.Logger] = None):
 		if isinstance(cmd, str):
 			self.cmd = [cmd]
 		else:
@@ -114,52 +123,40 @@ class Emacs:
 		self.logger = logger or logging.getLogger(__name__)
 
 	@classmethod
-	def batch(cls, args=(), **kwargs):
+	def batch(cls, args: Sequence[str] = (), **kwargs) -> 'Emacs':
 		"""Create instance with default settings to run in batch mode.
 
 		Parameters
 		----------
-		args : tuple
+		args
 			Extra arguments to pass the ``emacs`` command.
-
-		Returns
-		-------
-		.Emacs
 		"""
 		cmd = ['emacs', '--batch', *args]
 		return cls(cmd, client=False, **kwargs)
 
 	@classmethod
-	def client(cls, args=(), **kwargs):
+	def client(cls, args: Sequence[str] = (), **kwargs) -> 'Emacs':
 		"""Create instance with default settings to run in client mode.
 
 		Parameters
 		----------
-		args : tuple
+		args
 			Extra arguments to pass the ``emacsclient`` command.
-
-		Returns
-		-------
-		.Emacs
 		"""
 		cmd = ['emacsclient', *args]
 		return cls(cmd, client=True, **kwargs)
 
-	def run(self, args, check=True, verbose=None):
+	def run(self, args: Sequence[str], check: bool = True, verbose: Optional[int] = None) -> CompletedProcess:
 		"""Run the Emacs command with a list of arguments.
 
 		Parameters
 		----------
-		args : list[str]
+		args
 			List of strings.
-		check : bool
+		check
 			Check the return code is zero.
-		verbose : int or None
+		verbose
 			Overrides :attr:`verbose` attribute if not None.
-
-		Returns
-		-------
-		subprocess.CompletedProcess
 
 		Raises
 		------
@@ -181,25 +178,16 @@ class Emacs:
 
 		return result
 
-	def _getoutput(self, result):
-		"""Get the output of a command.
-
-		Parameters
-		----------
-		result : subprocess.CompletedProcess
-
-		Returns
-		-------
-		str
-		"""
+	def _getoutput(self, result: CompletedProcess) -> str:
+		"""Get the output of a command."""
 		return result.stdout.decode()
 
-	def getoutput(self, args, **kwargs):
+	def getoutput(self, args: Sequence[str], **kwargs) -> str:
 		"""Get output of command.
 
 		Parameters
 		----------
-		args : list[str]
+		args
 			List of strings.
 		kwargs
 			Passed to :meth:`run`.
@@ -211,14 +199,14 @@ class Emacs:
 		"""
 		return self._getoutput(self.run(args, **kwargs))
 
-	def eval(self, source, process=False, **kwargs):
+	def eval(self, source: StrOrNodeOrList, process: bool = False, **kwargs) -> Union[str, CompletedProcess]:
 		"""Evaluate ELisp source code and return output.
 
 		Parameters
 		----------
-		source : str or list
-			Elisp code. If a list of strings will be enclosed in ``progn``.
-		process : bool
+		source
+			Elisp code. If a list of strings/forms will be enclosed in ``progn``.
+		process
 			If True return the :class:`subprocess.CompletedProcess` object,
 			otherwise just return the value of ``stdout``.
 		kwargs
@@ -247,12 +235,12 @@ class Emacs:
 		else:
 			return self._getoutput(result)
 
-	def _result_from_stdout(self, form, **kwargs):
+	def _result_from_stdout(self, form: ElispAstNode, **kwargs) -> str:
 		"""Get result by reading from stdout."""
 		raise NotImplementedError()
 
 	@contextmanager
-	def _tmpfile(self):
+	def _tmpfile(self) -> str:
 		"""Make a temporary file to write/read emacs output to/from.
 
 		Returns a context manager which gives the path to the temporary file on
@@ -261,40 +249,40 @@ class Emacs:
 		with TemporaryDirectory() as tmpdir:
 			yield os.path.join(tmpdir, 'emacs-output')
 
-	def write_result(self, source, path):
+	def write_result(self, source: StrOrNodeOrList, path: str):
 		"""Have Emacs evaluate an elisp form and write its result to a file.
 
 		Parameters
 		----------
-		source : str or list
+		source
 			Elisp code to evaluate.
-		path : str
+		path
 			File path to write to.
 		"""
 		el = E.with_temp_file(str(path), E.insert(source))
 		self.eval(el)
 
-	def _json_from_tmpfile(self, form, encoding='utf8'):
+	def _json_from_tmpfile(self, form: StrOrNodeOrList, encoding: str = 'utf8'):
 		"""Write result of evaluating form to temporary file and parse as JSON."""
 		with self._tmpfile() as tmpfile:
 			self.write_result(form, tmpfile)
 			with open(tmpfile, encoding=encoding) as f:
 				return json.load(f)
 
-	def getresult(self, source, is_json=False, **kwargs):
+	def getresult(self, source: StrOrNodeOrList, is_json: str = False, **kwargs):
 		"""Get parsed result from evaluating the Elisp code.
 
 		Parameters
 		----------
-		source : str or list
+		source
 			Elisp code to evaluate.
-		is_json : bool
+		is_json
 			True if the result of evaluating the code is already a string of
 			JSON-encoded data.
 
 		Returns
 		-------
-		object
+		Any
 			Parsed value.
 
 		Raises

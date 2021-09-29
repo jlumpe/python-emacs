@@ -17,7 +17,7 @@ class ElispSingleton:
 			cls.__instance = object.__new__(cls)
 		return cls.__instance
 
-	def __getitem__(self, name):
+	def __getitem__(self, name) -> Symbol:
 		"""Indexing with string gets a Symbol."""
 		return Symbol(name)
 
@@ -32,7 +32,7 @@ class ElispSingleton:
 
 		return object.__getattribute__(self, name)
 
-	def __call__(self, value):
+	def __call__(self, value) -> ElispAstNode:
 		"""Calling as function converts value."""
 		return to_elisp(value)
 
