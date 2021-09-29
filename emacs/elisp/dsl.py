@@ -7,7 +7,7 @@ from .ast import *
 
 
 class ElispDSL:
-	"""Implements the ELisp DSL.
+	"""Implements the Elisp DSL.
 	"""
 
 	def __getitem__(self, name) -> Symbol:

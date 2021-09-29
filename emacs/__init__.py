@@ -1,7 +1,4 @@
-"""Root package for python-emacs.
-
-Python interface to GNU Emacs.
-"""
+"""Python interface to GNU Emacs."""
 
 __author__ = 'Jared Lumpe'
 __email__ = 'mjlumpe@gmail.com'

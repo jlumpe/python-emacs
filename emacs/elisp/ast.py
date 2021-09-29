@@ -55,7 +55,7 @@ class Literal(Expr):
 
 
 class Symbol(Expr):
-	"""Elisp symbol."""
+	"""An Elisp symbol."""
 
 	name: str
 
@@ -177,8 +177,7 @@ def to_elisp(value, **kw) -> Expr:
 	value
 		Python value to convert.
 	dict_format : str
-		Elisp format to convert dicts/mappings to. Either ``'alist'`` (default)
-		or ``'plist'``.
+		Elisp format to convert dicts/mappings to. Either ``'alist'`` (default) or ``'plist'``.
 
 	Returns
 	-------

@@ -29,7 +29,7 @@ def _get_exprs_seq(seq: StrOrExpr) -> List[Expr]:
 
 
 def get_expr(src: StrOrExprOrList) -> Expr:
-	"""Get Elisp progn from string, Expr, or sequence of these."""
+	"""Get source as list of forms from string, single form, or sequence of these."""
 	if isinstance(src, Expr):
 		return src
 
@@ -200,7 +200,7 @@ class Emacs:
 		return self._getoutput(self.run(args, **kwargs))
 
 	def eval(self, source: StrOrExprOrList, process: bool = False, **kwargs) -> Union[str, CompletedProcess]:
-		"""Evaluate ELisp source code and return output.
+		"""Evaluate Elisp source code and return output.
 
 		Parameters
 		----------
@@ -277,8 +277,7 @@ class Emacs:
 		source
 			Elisp code to evaluate.
 		is_json
-			True if the result of evaluating the code is already a string of
-			JSON-encoded data.
+			True if the result of evaluating the code is already a string of JSON-encoded data.
 
 		Returns
 		-------
