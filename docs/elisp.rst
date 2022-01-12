@@ -5,12 +5,12 @@ Representing Emacs lisp code in Python
 ======================================
 
 The :mod:`emacs.elisp` module contains utilities for representing Emacs lisp
-Abstract Syntax Trees (AST's) as Python objects, see the :class:`ElispAstNode`
+Abstract Syntax Trees (AST's) as Python objects, see the :class:`Expr`
 abstract class and its subclasses.
 
 
-Creating Elisp forms
---------------------
+Creating Elisp expressions
+--------------------------
 
 The fundamental data type in Elisp is the list. Other data types include symbols
 and self-evaluating types such as strings or numbers.
@@ -64,7 +64,7 @@ below):
 
 Elements of composite data types (lists, tuples, dicts) are recursively
 converted using :meth:`to_elisp` if they are not already instances of
-:class:`ElispAstNode`.
+:class:`Expr`.
 
 You can use :func:`quote` to quote a value. It will also convert strings to
 quoted symbols:
@@ -82,7 +82,7 @@ quoted symbols:
    <el 'foo>
 
 
-A a form that must be constructed directly because it has no Python equivalent
+An expression that must be constructed directly because it has no Python equivalent
 is the cons cell, represented with the class :class:`Cons`:
 
 .. doctest::
@@ -127,13 +127,13 @@ be inserted verbatim in the given location:
    <el (print "hi")>
 
 
-Using Elisp forms
------------------
+Using Elisp expressions
+-----------------------
 
 .. py:currentmodule:: emacs.emacs
 
 
-Elisp forms can be passed to :meth:`Emacs.eval` and :meth:`Emacs.getresult` for
+Elisp expressions can be passed to :meth:`Emacs.eval` and :meth:`Emacs.getresult` for
 execution. You can also convert them to strings to produce (hopefully)
 syntactically-correct Elisp code.
 
@@ -192,7 +192,7 @@ Symbols can be called as functions, generating Elisp function calls:
 Additionally, the ``Q``, ``C``, ``S``, and ``R`` methods are aliases for the
 :func:`quote`, :class:`Cons`, :func:`symbols`, and :class:`Raw`, respectively.
 
-Using just the ``E`` object, it is possible to write complex Elisp forms:
+Using just the ``E`` object, it is possible to write complex Elisp expressions:
 
 .. doctest::
 

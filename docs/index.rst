@@ -12,6 +12,7 @@ Welcome to python-emacs's documentation!
 
    usage
    elisp
+   api
 
 
 Indices and tables
