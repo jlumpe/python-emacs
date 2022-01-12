@@ -23,10 +23,6 @@ an already-running Emacs process using the ``emacsclient`` program. This should
 make most commands run much faster. If you use this method make sure to start
 the server in Emacs using ``(server-start)``.
 
-If the ``verbose`` keyword argument is set to 1 or higher, the subprocess'
-``stderr`` stream will be redirected to the console. If set to 2 ``stdout`` will
-be displayed as well.
-
 
 Low-level interface
 -------------------

@@ -98,8 +98,6 @@ class Emacs:
 		Base command to run Emacs.
 	is_client
 	    Whether the command runs ``emacsclient``.
-	verbose
-		1 to echo stderr of Emacs command, 2 to echo stdout. 0 turns off.
 
 	Parameters
 	----------
@@ -110,7 +108,6 @@ class Emacs:
 	"""
 	cmd: Union[str, List[str]]
 	is_client: bool
-	verbose: int
 	logger: logging.Logger
 
 	def __init__(self, cmd: Union[str, List[str]], client: bool = False, logger: Optional[logging.Logger] = None):
@@ -146,7 +143,7 @@ class Emacs:
 		cmd = ['emacsclient', *args]
 		return cls(cmd, client=True, **kwargs)
 
-	def run(self, args: Sequence[str], check: bool = True, verbose: Optional[int] = None) -> CompletedProcess:
+	def run(self, args: Sequence[str], check: bool = True) -> CompletedProcess:
 		"""Run the Emacs command with a list of arguments.
 
 		Parameters
@@ -155,8 +152,6 @@ class Emacs:
 			List of strings.
 		check
 			Check the return code is zero.
-		verbose
-			Overrides :attr:`verbose` attribute if not None.
 
 		Raises
 		------
