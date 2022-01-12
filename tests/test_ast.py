@@ -65,16 +65,17 @@ def test_convert():
 	assert el.to_elisp(1.0) == el.Literal(1.0)
 	assert el.to_elisp("foo") == el.Literal("foo")
 
-	# Tuples to lists
+	# Python tuples to lists
 	tup = ((3.14, "bar", NIL, (1, 2)))
 	assert el.to_elisp(tup) == el.List(list(map(el.to_elisp, tup)))
 
-	# Lists become quoted
+	# Python lists become quoted
 	assert el.to_elisp(list(tup)) == el.Quote(el.to_elisp(tup))
 
-	# Mapping objects converted as alists
+	# Mapping objects converted as alists (default) or plists
 	d = {'a': 1, 'b': 'foo', 'c': True}
 	assert el.to_elisp(d) == el.make_alist(d)
+	assert el.to_elisp(d, dict_format='plist') == el.make_plist(d)
 
 	# Should leave existing exprs unchanged
 	for n in EXPRS:

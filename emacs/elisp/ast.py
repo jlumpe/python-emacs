@@ -20,7 +20,7 @@ class Expr:
 	def __repr__(self):
 		return '<el %s>' % self
 
-	def _quoted(self) -> str:
+	def _repr_quoted(self) -> str:
 		"""Get representation within a quoted expression."""
 		return str(self)
 
@@ -100,8 +100,8 @@ class Cons(Expr):
 	def __str__(self):
 		return '(cons %s %s)' % (self.car, self.cdr)
 
-	def _quoted(self) -> str:
-		return '(%s . %s)' % (self.car._quoted(), self.cdr._quoted())
+	def _repr_quoted(self) -> str:
+		return '(%s . %s)' % (self.car._repr_quoted(), self.cdr._repr_quoted())
 
 
 class List(Expr):
@@ -124,8 +124,8 @@ class List(Expr):
 	def __str__(self):
 		return '(%s)' % ' '.join(map(str, self.items))
 
-	def _quoted(self) -> str:
-		return '(%s)' % ' '.join(item._quoted() for item in self.items)
+	def _repr_quoted(self) -> str:
+		return '(%s)' % ' '.join(item._repr_quoted() for item in self.items)
 
 
 class Quote(Expr):
@@ -144,7 +144,7 @@ class Quote(Expr):
 		return isinstance(other, Quote) and other.expr == self.expr
 
 	def __str__(self):
-		return "'%s" % self.expr._quoted()
+		return "'%s" % self.expr._repr_quoted()
 
 
 class Raw(Expr):
@@ -172,6 +172,18 @@ class Raw(Expr):
 def to_elisp(value, **kw) -> Expr:
 	"""Convert a Python value to an Elisp expression.
 
+	The following conversions are supported:
+
+	* ``True`` to ``t`` symbol.
+	* ``False`` and ``None`` to ``nil`` symbol.
+	* ``int``, ``float``, and ``str`` to literals.
+	* ``tuple`` to unquoted elisp list.
+	* ``list`` to quoted elisp list.
+	* ``dict`` and other mapping types to either alist or plist, see ``dict_format``.
+	* :class:`.Expr` instances are returned unchanged.
+
+	For compound types, their contents are recursively converted as well.
+
 	Parameters
 	----------
 	value
@@ -194,7 +206,6 @@ def _bool_to_elisp(value, **kw):
 	return Symbol('t') if value else Symbol('nil')
 
 
-
 def _literal_to_elisp(value, **kw):
 	return Literal(value)
 
@@ -214,26 +225,36 @@ def _py_list_to_el_list(pylist, **kw):
 	return Quote(_make_el_list(pylist, **kw))
 
 
-def quote(value: Union[str, Expr], **kw) -> Quote:
-	"""Quote value, converting Python strings to symbols.
+@to_elisp.register(Mapping)
+def _mapping_to_elisp(value, **kw):
+	fmt = kw.get('dict_format', 'alist')
+	if fmt == 'alist':
+		return make_alist(value, **kw)
+	if fmt == 'plist':
+		return make_plist(value, **kw)
+	raise ValueError('Invalid value for dict_format argument: %r' % fmt)
+
+
+def quote(expr: Union[str, Expr], **kw) -> Quote:
+	"""Quote expression, converting Python strings to symbols.
 
 	Parameters
 	----------
-	value
-		Elisp value or symbol name to quote.
+	expr
+		Elisp expression or symbol name to quote.
 	kw
 		Keyword arguments passed to :func:`.to_elisp` if value needs to be converted.
 	"""
-	if isinstance(value, str):
-		expr = Symbol(value)
+	if isinstance(expr, str):
+		expr = Symbol(expr)
 	else:
-		expr = to_elisp(value, **kw)
+		expr = to_elisp(expr, **kw)
 
 	return Quote(expr)
 
 
-def symbols(*names: str, quote: bool = False) -> List:
-	"""Create a list of symbols.
+def symbols(*names: Union[str, Symbol], quote: bool = False) -> Expr:
+	"""Create an Elisp list of symbols.
 
 	Parameters
 	----------
@@ -269,8 +290,9 @@ def _convert_pairs(pairs, kw) -> PyList[Tuple[Expr, Expr]]:
 
 	return l
 
+
 def make_alist(pairs: Union[Mapping, Iterable[Tuple]], quote: bool = False, **kw) -> Expr:
-	"""Create an alist from a set of key-value pairs.
+	"""Create an alist expression from a set of key-value pairs.
 
 	Parameters
 	----------
@@ -286,7 +308,7 @@ def make_alist(pairs: Union[Mapping, Iterable[Tuple]], quote: bool = False, **kw
 
 
 def make_plist(pairs: Union[Mapping, Tuple[Any, Any]], quote: bool = False, **kw) -> Expr:
-	"""Create a plist from a set of key-value pairs.
+	"""Create a plist expression from a set of key-value pairs.
 
 	Parameters
 	----------
@@ -299,16 +321,6 @@ def make_plist(pairs: Union[Mapping, Tuple[Any, Any]], quote: bool = False, **kw
 	"""
 	plist = List([x for kv in _convert_pairs(pairs, kw) for x in kv])
 	return Quote(plist) if quote else plist
-
-
-@to_elisp.register(Mapping)
-def _mapping_to_elisp(value, **kw):
-	fmt = kw.get('dict_format', 'alist')
-	if fmt == 'alist':
-		return make_alist(value, **kw)
-	if fmt == 'plist':
-		return make_plist(value, **kw)
-	raise ValueError('Invalid value for dict_format argument: %r' % fmt)
 
 
 def print_elisp_string(string: str) -> str:
