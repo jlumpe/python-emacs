@@ -50,40 +50,6 @@ def get_exprs_list(src: StrOrExprOrList) -> List[Expr]:
 	return _get_exprs_seq(src)
 
 
-class EmacsException(Exception):
-	"""An exception that occurred when trying to evaluate Elisp code in an emacs process.
-
-	Attributes
-	----------
-	src
-		Elisp code the process was trying to evaluate.
-	stdout
-		Process' stdout.
-	stderr
-		Process' stderr.
-	"""
-	src: StrOrExpr
-	stdout: str
-	stderr: str
-
-	def __init__(self, src: StrOrExpr, stdout: str = None, stderr: str = None):
-		self.src = src
-		self.stdout = stdout
-		self.stderr = stderr
-
-	@classmethod
-	def from_calledprocess(cls, src: StrOrExpr, cpe: CalledProcessError) -> 'EmacsException':
-		"""Create from a CalledProcessError.
-
-		Parameters
-		----------
-		src
-			Source code which was to be evaluated.
-		cpe
-		"""
-		exc = cls(src, stdout=cpe.stdout, stderr=cpe.stderr)
-		exc.__cause__ = cpe
-		return exc
 
 
 class Emacs:
