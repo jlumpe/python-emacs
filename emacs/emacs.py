@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 import logging
 
 from .elisp import Expr, E, get_src
-from .elisp.ast import StrOrExprOrList
+from .elisp.exprs import StrOrExprOrList
 
 
 class Emacs:

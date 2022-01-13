@@ -6,12 +6,9 @@ import emacs.elisp as el
 
 
 # Some reusable expression constants
-T = el.Symbol('t')
-NIL = el.Symbol('nil')
-
-SYMBOLS = [T, NIL] + list(map(el.Symbol, ['foo', ':foo', '+']))
+SYMBOLS = list(map(el.Symbol, ['nil', 'foo', ':foo', '+']))
 LITERALS = list(map(el.Literal, [0, 1, -1, 0.0, 1.0, "foo", "bar", ""]))
-CONS = [el.Cons(el.Literal(0), el.Literal(1)), el.Cons(el.Symbol('foo'), el.Literal('bar'))]
+CONS = [el.cons(el.Literal(0), el.Literal(1)), el.cons(el.Symbol('foo'), el.Literal('bar'))]
 LISTS = list(map(el.List, [
 	[],
 	[el.Literal(i) for i in range(1, 4)],
@@ -58,9 +55,9 @@ def test_convert():
 	"""Test conversion of Python values."""
 
 	# Bools and none to t and nil
-	assert el.to_elisp(None) == NIL
-	assert el.to_elisp(False) == NIL
-	assert el.to_elisp(True) == T
+	assert el.to_elisp(None) == el.nil
+	assert el.to_elisp(False) == el.nil
+	assert el.to_elisp(True) == el.el_true
 
 	# Wrap numbers and strings in literals
 	assert el.to_elisp(1) == el.Literal(1)
@@ -68,11 +65,11 @@ def test_convert():
 	assert el.to_elisp("foo") == el.Literal("foo")
 
 	# Python tuples to lists
-	tup = ((3.14, "bar", NIL, (1, 2)))
-	assert el.to_elisp(tup) == el.List(list(map(el.to_elisp, tup)))
+	tup = ((3.14, "bar", el.nil, (1, 2)))
+	assert el.to_elisp(tup) == el.el_list(tup)
 
 	# Python lists become quoted
-	assert el.to_elisp(list(tup)) == el.Quote(el.to_elisp(tup))
+	assert el.to_elisp(list(tup)) == el.Quote(el.el_list(tup))
 
 	# Mapping objects converted as alists (default) or plists
 	d = {'a': 1, 'b': 'foo', 'c': True}
@@ -86,22 +83,22 @@ def test_convert():
 
 def test_symbol_call():
 	"""Test that calling a symbol creates a function call."""
-	assert el.Symbol('+')(1, 2) == el.List([el.Symbol('+'), 1, 2])
+	assert el.Symbol('+')(1, 2) == el.el_list([el.Symbol('+'), 1, 2])
 
 
 def test_str():
 	"""Test conversion to str."""
-	assert list(map(str, SYMBOLS)) == ['t', 'nil', 'foo', ':foo', '+']
+	assert list(map(str, SYMBOLS)) == ['nil', 'foo', ':foo', '+']
 
 	assert list(map(str, LITERALS)) == ['0', '1', '-1', '0.0', '1.0', '"foo"', '"bar"', '""']
 
-	assert str(el.List([1, el.Symbol('a'), "b"])) == '(1 a "b")'
+	assert str(el.el_list([1, el.Symbol('a'), "b"])) == '(1 a "b")'
 
-	assert str(el.Cons(el.Symbol('a'), 1)) == '(cons a 1)'
+	assert str(el.cons(el.Symbol('a'), 1)) == '(cons a 1)'
+	assert str(el.Quote(el.cons(el.Symbol('a'), 1))) == '\'(a . 1)'
 
 	assert str(el.Quote(el.Symbol('foo'))) == '\'foo'
-	assert str(el.Quote(el.List([1, el.Symbol('a'), "b"]))) == '\'(1 a "b")'
-	assert str(el.Quote(el.Cons(el.Symbol('a'), 1))) == '\'(a . 1)'
+	assert str(el.Quote(el.el_list([1, el.Symbol('a'), "b"]))) == '\'(1 a "b")'
 
 	assert str(el.Raw('(+ 1 2)')) == '(+ 1 2)'
 
@@ -112,7 +109,7 @@ def test_quote():
 	assert el.quote(sym) == el.Quote(sym)
 	assert el.quote('a') == el.Quote(sym)
 
-	l = el.List([1, 2, 3])
+	l = el.el_list([1, 2, 3])
 	assert el.quote(l) == el.Quote(l)
 
 
@@ -139,7 +136,7 @@ def test_make_alist():
 	assert el.make_alist(d) == el.List([
 		el.Cons(el.Symbol('a'), el.Literal(1)),
 		el.Cons(el.Symbol('b'), el.to_elisp(d['b'])),
-		el.Cons(el.Literal(42), el.Symbol('t')),
+		el.Cons(el.Literal(42), el.el_true),
 	])
 	assert el.make_alist(d, quote=True) == el.Quote(el.make_alist(d))
 
@@ -150,6 +147,6 @@ def test_make_plist():
 	assert el.make_plist(d) == el.List([
 		el.Symbol('a'), el.Literal("foo"),
 		el.Symbol('b'), el.to_elisp(d['b']),
-		el.Symbol('c'), el.Symbol('t'),
+		el.Symbol('c'), el.el_true,
 	])
 	assert el.make_plist(d, quote=True) == el.Quote(el.make_plist(d))

@@ -3,7 +3,9 @@
 God help us all.
 """
 
-from .ast import *
+from .ast import Expr, Symbol, Raw
+from .exprs import to_elisp, quote, symbols, cons
+from .util import snake_to_kebab
 
 
 class ElispDSL:
@@ -14,14 +16,10 @@ class ElispDSL:
 		"""Indexing with string gets a Symbol."""
 		return Symbol(name)
 
-	def _convert_symbol_name(self, name):
-		"""Convert symbol name from Python style to Elisp style."""
-		return name.replace('_', '-')
-
 	def __getattr__(self, name):
 		"""Attribute access with lower-case name gets a symbol."""
 		if name[0] == name[0].lower() and not name.startswith('__'):
-			return Symbol(self._convert_symbol_name(name))
+			return Symbol(snake_to_kebab(name))
 
 		return object.__getattribute__(self, name)
 
@@ -30,7 +28,7 @@ class ElispDSL:
 		return to_elisp(value)
 
 	Q = staticmethod(quote)
-	C = staticmethod(Cons)
+	C = staticmethod(cons)
 	S = staticmethod(symbols)
 	R = staticmethod(Raw)
 
