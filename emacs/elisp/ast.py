@@ -111,7 +111,7 @@ class List(Expr):
 
 	items: Tuple[Expr, ...]
 
-	def __init__(self, items: Iterable):
+	def __init__(self, items: Iterable[Expr]):
 		self.items = tuple(map(to_elisp, items))
 
 	def __eq__(self, other):
@@ -249,6 +249,16 @@ def quote(expr: Union[str, Expr], **kw) -> Quote:
 	return Quote(expr)
 
 
+def symbol(name: Union[str, Symbol]) -> Symbol:
+	"""Convert argument to symbol."""
+	if isinstance(name, str):
+		return Symbol(name)
+	elif isinstance(name, Symbol):
+		return name
+	else:
+		raise TypeError('Expected str or Symbol, got %s' % type(name).__name__)
+
+
 def symbols(*names: Union[str, Symbol], quote: bool = False) -> Expr:
 	"""Create an Elisp list of symbols.
 
@@ -259,18 +269,7 @@ def symbols(*names: Union[str, Symbol], quote: bool = False) -> Expr:
 	quote
 		Whether quote the resulting list.
 	"""
-
-	s = []
-
-	for name in names:
-		if isinstance(name, str):
-			s.append(Symbol(name))
-		elif isinstance(name, Symbol):
-			s.append(name)
-		else:
-			raise TypeError('Expected str or Symbol, got %s' % type(name).__name__)
-
-	l = List(s)
+	l = List([symbol(name) for name in names])
 	return Quote(l) if quote else l
 
 

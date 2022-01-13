@@ -1,5 +1,7 @@
 """Test Elisp AST classes."""
 
+import pytest
+
 import emacs.elisp as el
 
 
@@ -18,7 +20,7 @@ LISTS = list(map(el.List, [
 QUOTES = [el.Quote(n) for l in [SYMBOLS, LITERALS, CONS, LISTS] for n in l[:2]]
 RAW = [el.Raw('(+ 1 2)'), el.Raw('(message "hello")')]
 
-EXPRS = SYMBOLS + LITERALS + CONS + LISTS
+EXPRS = SYMBOLS + LITERALS + CONS + LISTS + RAW
 
 
 def test_equality():
@@ -112,6 +114,16 @@ def test_quote():
 
 	l = el.List([1, 2, 3])
 	assert el.quote(l) == el.Quote(l)
+
+
+def test_symbol():
+	"""Test the symbol() function."""
+	sym = el.Symbol('a')
+	assert el.symbol(sym) == sym
+	assert el.symbol(sym.name) == sym
+
+	with pytest.raises(TypeError):
+		el.symbol(0)
 
 
 def test_symbols():
