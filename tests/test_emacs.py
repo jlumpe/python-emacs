@@ -4,6 +4,7 @@ import subprocess as sp
 import pytest
 
 
+from emacs import EmacsClient
 
 
 pytestmark = [pytest.mark.requires_emacs]
@@ -18,11 +19,12 @@ def test_daemon(daemon):
 
 
 class TestInterface:
+	"""Test the common interface of the EmacsBatch and EmacsClient classes."""
 
 	def test_run(self, emacs):
 		"""Test the run() method."""
 
-		if emacs.is_client:
+		if isinstance(emacs, EmacsClient):
 			pytest.xfail('Client output not working')
 
 		args = ['--eval', '(princ "foo")']
@@ -42,7 +44,7 @@ class TestInterface:
 	def test_eval(self, emacs):
 		"""Test the eval() method."""
 
-		if emacs.is_client:
+		if isinstance(emacs, EmacsClient):
 			pytest.xfail('Client output not working')
 
 		assert emacs.eval('(princ "foo")') == 'foo'
@@ -54,3 +56,11 @@ class TestInterface:
 		# Syntax error
 		with pytest.raises(sp.CalledProcessError):
 			emacs.eval('(')
+
+
+class TestEmacsBatch:
+	"""Tests specific to EmacsBatch class."""
+
+
+class TestEmacsClient:
+	"""Tests specific to EmacsClient class."""

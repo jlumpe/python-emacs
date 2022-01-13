@@ -5,5 +5,5 @@ __email__ = 'mjlumpe@gmail.com'
 __version__ = '0.1'
 
 
-from .emacs import Emacs
+from .emacs import EmacsBatch, EmacsClient
 from .elisp import E

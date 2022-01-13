@@ -3,7 +3,7 @@ import subprocess as sp
 
 import pytest
 
-from emacs import Emacs
+from emacs import EmacsBatch, EmacsClient
 
 
 SERVER_NAME = 'pytest'
@@ -11,10 +11,10 @@ DAEMON_ARGS = ['-Q', f'--fg-daemon={SERVER_NAME}']
 
 
 def make_batch():
-	return Emacs.batch(['-Q'])
+	return EmacsBatch(args=['-Q'])
 
 def make_client():
-	return Emacs.client(['-s', SERVER_NAME])
+	return EmacsClient(server=SERVER_NAME)
 
 
 @pytest.fixture(scope='module')
