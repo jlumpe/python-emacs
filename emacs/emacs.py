@@ -9,47 +9,8 @@ from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 import logging
 
-from .elisp import Expr, E, Raw
-
-
-StrOrExpr = Union[str, Expr]
-StrOrExprOrList = Union[StrOrExpr, Sequence[StrOrExpr]]
-
-
-def _get_exprs_seq(seq: StrOrExpr) -> List[Expr]:
-	exprs = []
-	for item in seq:
-		if isinstance(item, str):
-			exprs.append(Raw(item))
-		elif isinstance(item, Expr):
-			exprs.append(item)
-		else:
-			raise TypeError('Sequence elements must be strings or Expr instances.')
-	return exprs
-
-
-def get_expr(src: StrOrExprOrList) -> Expr:
-	"""Get source as list of forms from string, single form, or sequence of these."""
-	if isinstance(src, Expr):
-		return src
-
-	if isinstance(src, str):
-		return Raw(src)
-
-	return E.progn(*_get_exprs_seq(src))
-
-
-def get_exprs_list(src: StrOrExprOrList) -> List[Expr]:
-	"""Get source as list of expression from string, AST node, or sequence of these."""
-	if isinstance(src, Expr):
-		return [src]
-
-	if isinstance(src, str):
-		return [Raw(src)]
-
-	return _get_exprs_seq(src)
-
-
+from .elisp import Expr, E, get_src
+from .elisp.ast import StrOrExprOrList
 
 
 class Emacs:
@@ -139,10 +100,6 @@ class Emacs:
 
 		return result
 
-	def _getoutput(self, result: CompletedProcess) -> str:
-		"""Get the output of a command."""
-		return result.stdout.decode()
-
 	def getoutput(self, args: Sequence[str], **kwargs) -> str:
 		"""Get output of command.
 
@@ -158,7 +115,8 @@ class Emacs:
 		str
 			Value of stdout.
 		"""
-		return self._getoutput(self.run(args, **kwargs))
+		result = self.run(args, check=True, **kwargs)
+		return result.stdout.decode()
 
 	def eval(self, source: StrOrExprOrList, process: bool = False, **kwargs) -> Union[str, CompletedProcess]:
 		"""Evaluate Elisp source code and return output.
@@ -184,7 +142,7 @@ class Emacs:
 		.EmacsException
 			If an error occurred trying to execute the elsip code.
 		"""
-		source = str(get_expr(source))
+		source = str(get_src(source))
 
 		try:
 			result = self.run(['--eval', source], **kwargs)
@@ -194,7 +152,7 @@ class Emacs:
 		if process:
 			return result
 		else:
-			return self._getoutput(result)
+			return result.stdout.decode()
 
 	def _result_from_stdout(self, expr: Expr, **kwargs) -> str:
 		"""Get result by reading from stdout."""
@@ -250,7 +208,7 @@ class Emacs:
 		.EmacsException
 			If an error occurred trying to execute the elsip code.
 		"""
-		expr = get_expr(source)
+		expr = get_src(source)
 
 		if not is_json:
 			expr = E.progn(

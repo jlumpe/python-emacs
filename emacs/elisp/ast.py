@@ -1,6 +1,6 @@
 """Base classes for Emacs Lisp abstract syntax trees."""
 
-from typing import Any, Union, Tuple, Iterable, List as PyList
+from typing import Any, Union, Tuple, Iterable, List as PyList, Sequence
 import re
 from functools import singledispatch
 from collections.abc import Mapping
@@ -326,3 +326,40 @@ def make_plist(pairs: Union[Mapping, Tuple[Any, Any]], quote: bool = False, **kw
 def print_elisp_string(string: str) -> str:
 	"""Print string to Elisp, properly escaping it (maybe)."""
 	return '"%s"' % re.sub(r'([\\\"])', r'\\\1', string)
+
+
+_StrOrExpr = Union[str, Expr]
+StrOrExprOrList = Union[_StrOrExpr, Sequence[_StrOrExpr]]
+
+def get_src(src: StrOrExprOrList) -> Expr:
+	"""Get Elisp source code as :class:`.Expr` instance.
+
+	Parameters
+	----------
+	src
+		Elisp expression(s) as either a string containing raw Elisp code, a single ``Expr``, or a list
+		of these.
+
+	Returns
+	-------
+	.Expr
+		Source code as single expression. If the input was a list it will be enclosed in a
+		``progn`` block.
+	"""
+	if isinstance(src, Expr):
+		return src
+
+	if isinstance(src, str):
+		return Raw(src)
+
+	# Enclose in (progn ...)
+	exprs = []
+	for x in src:
+		if isinstance(x, str):
+			exprs.append(Raw(x))
+		elif isinstance(x, Expr):
+			exprs.append(x)
+		else:
+			raise TypeError(f'Statements must be instances of str or Expr, got {type(x).__name__}')
+
+	return E.progn(*exprs)
