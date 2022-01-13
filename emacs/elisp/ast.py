@@ -6,10 +6,6 @@ from functools import singledispatch
 from collections.abc import Mapping
 
 
-__all__ = ['Expr', 'Literal', 'Symbol', 'Cons', 'List', 'Quote',
-           'Raw', 'to_elisp', 'make_alist', 'make_plist', 'symbols', 'quote']
-
-
 class Expr:
 	"""Base for classes which represent Elisp expressions."""
 
@@ -362,4 +358,4 @@ def get_src(src: StrOrExprOrList) -> Expr:
 		else:
 			raise TypeError(f'Statements must be instances of str or Expr, got {type(x).__name__}')
 
-	return E.progn(*exprs)
+	return Symbol('progn')(*exprs)

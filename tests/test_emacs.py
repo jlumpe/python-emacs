@@ -58,6 +58,9 @@ class TestInterface:
 	def test_run(self, emacs):
 		"""Test the run() method."""
 
+		if emacs.is_client:
+			pytest.xfail('Client output not working')
+
 		args = ['--eval', '(princ "foo")']
 		result = emacs.run(args)
 		assert isinstance(result, sp.CompletedProcess)
@@ -69,13 +72,21 @@ class TestInterface:
 		with pytest.raises(sp.CalledProcessError):
 			emacs.run(args2)
 
-		args2 = ['--eval', '(']
 		result2 = emacs.run(args2, check=False)
 		assert result2.returncode != 0
 
-	def test_getoutput(self, emacs):
-		"""Test the getoutput() method."""
-		assert emacs.getoutput(['--eval', '(princ "foo")']) == 'foo'
+	def test_eval(self, emacs):
+		"""Test the eval() method."""
 
+		if emacs.is_client:
+			pytest.xfail('Client output not working')
+
+		assert emacs.eval('(princ "foo")') == 'foo'
+
+		cp = emacs.eval('(princ "foo")', process=True)
+		assert isinstance(cp, sp.CompletedProcess)
+		assert cp.stdout.decode() == 'foo'
+
+		# Syntax error
 		with pytest.raises(sp.CalledProcessError):
-			emacs.getoutput(['--eval', '('])
+			emacs.eval('(')

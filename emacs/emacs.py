@@ -1,9 +1,8 @@
 """Interface with Emacs and run commands."""
 
-import sys
 from typing import Optional, Union, Sequence, List
 import os
-from subprocess import run, PIPE, CalledProcessError, CompletedProcess
+import subprocess as sp
 import json
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
@@ -70,7 +69,7 @@ class Emacs:
 		cmd = ['emacsclient', *args]
 		return cls(cmd, client=True, **kwargs)
 
-	def run(self, args: Sequence[str], check: bool = True) -> CompletedProcess:
+	def run(self, args: Sequence[str], check: bool = True) -> sp.CompletedProcess:
 		"""Run the Emacs command with a list of arguments.
 
 		Parameters
@@ -88,7 +87,7 @@ class Emacs:
 		cmd = [*self.cmd, *args]
 
 		self.logger.info(cmd)
-		result = run(cmd, check=False, stdout=PIPE, stderr=PIPE)
+		result = sp.run(cmd, check=False, stdout=sp.PIPE, stderr=sp.PIPE)
 
 		if result.stderr:
 			self.logger.warning(result.stderr.decode())
@@ -100,25 +99,7 @@ class Emacs:
 
 		return result
 
-	def getoutput(self, args: Sequence[str], **kwargs) -> str:
-		"""Get output of command.
-
-		Parameters
-		----------
-		args
-			List of strings.
-		kwargs
-			Passed to :meth:`run`.
-
-		Returns
-		-------
-		str
-			Value of stdout.
-		"""
-		result = self.run(args, check=True, **kwargs)
-		return result.stdout.decode()
-
-	def eval(self, source: StrOrExprOrList, process: bool = False, **kwargs) -> Union[str, CompletedProcess]:
+	def eval(self, source: StrOrExprOrList, process: bool = False, **kwargs) -> Union[str, sp.CompletedProcess]:
 		"""Evaluate Elisp source code and return output.
 
 		Parameters
@@ -134,20 +115,10 @@ class Emacs:
 		Returns
 		-------
 		str or subprocess.CompletedProcess
-			Command output or completed process object, depending on value of
-			``process``.
-
-		Raises
-		------
-		.EmacsException
-			If an error occurred trying to execute the elsip code.
+			Command output or completed process object, depending on value of ``process``.
 		"""
 		source = str(get_src(source))
-
-		try:
-			result = self.run(['--eval', source], **kwargs)
-		except CalledProcessError as exc:
-			raise EmacsException.from_calledprocess(source, exc)
+		result = self.run(['--eval', source], **kwargs)
 
 		if process:
 			return result
