@@ -1,8 +1,8 @@
 """Base classes for Emacs Lisp abstract syntax trees."""
 
-from typing import Any, Union, Tuple, Iterable
+from typing import Union, Tuple, Iterable
 
-from .util import print_elisp_string
+from .util import escape_emacs_string
 
 
 class Expr:
@@ -44,7 +44,7 @@ class Literal(Expr):
 
 	def __str__(self):
 		if isinstance(self.pyvalue, str):
-			return print_elisp_string(self.pyvalue)
+			return escape_emacs_string(self.pyvalue, quotes=True)
 		else:
 			return str(self.pyvalue)
 
