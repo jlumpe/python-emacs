@@ -1,4 +1,4 @@
-"""Functions to create certain Elisp functions more easily."""
+"""Functions to build Elisp expressions (more) easily."""
 
 from typing import Any, Union, Tuple, Iterable, List as PyList, Sequence
 from collections.abc import Mapping

@@ -1,4 +1,4 @@
-"""Test Elisp AST classes."""
+"""Test emacs.elisp.ast"""
 
 import pytest
 
@@ -20,133 +20,88 @@ RAW = [el.Raw('(+ 1 2)'), el.Raw('(message "hello")')]
 EXPRS = SYMBOLS + LITERALS + CONS + LISTS + RAW
 
 
-def test_equality():
-	"""Test equality of expressions."""
+def check_pw_equality(items):
+	"""Check items are equal to themselves but not each other."""
 
-	for l in LITERALS:
-		assert l == el.Literal(l.pyvalue)
-
-	for s in SYMBOLS:
-		assert s == el.Symbol(s.name)
-
-	for c in CONS:
-		assert c == el.Cons(c.car, c.cdr)
-
-	for l in LISTS:
-		assert l == el.List(l.items)
-
-	for q in QUOTES:
-		assert q == el.Quote(q.expr)
-
-	# Check inequality - these should all be pairwise unequal
-	for i, item1 in enumerate(EXPRS):
-		for item2 in EXPRS[i + 1:]:
-			assert item1 != item2
-
-			# Check quoted versions of pair as well
-			assert el.Quote(item1) != el.Quote(item2)
-			assert el.Quote(item1) != item1
-			assert el.Quote(item1) != item2
-			assert el.Quote(item2) != item1
-			assert el.Quote(item2) != item2
+	for i, item1 in enumerate(items):
+		for j, item2 in enumerate(items):
+			if i == j:
+				assert item1 == item2
+			else:
+				assert item1 != item2
 
 
-def test_convert():
-	"""Test conversion of Python values."""
+class TestLiteral:
 
-	# Bools and none to t and nil
-	assert el.to_elisp(None) == el.nil
-	assert el.to_elisp(False) == el.nil
-	assert el.to_elisp(True) == el.el_true
+	def test_eq(self):
+		check_pw_equality(LITERALS)
 
-	# Wrap numbers and strings in literals
-	assert el.to_elisp(1) == el.Literal(1)
-	assert el.to_elisp(1.0) == el.Literal(1.0)
-	assert el.to_elisp("foo") == el.Literal("foo")
+		for l in LITERALS:
+			assert l == el.Literal(l.pyvalue)
 
-	# Python tuples to lists
-	tup = ((3.14, "bar", el.nil, (1, 2)))
-	assert el.to_elisp(tup) == el.el_list(tup)
-
-	# Python lists become quoted
-	assert el.to_elisp(list(tup)) == el.Quote(el.el_list(tup))
-
-	# Mapping objects converted as alists (default) or plists
-	d = {'a': 1, 'b': 'foo', 'c': True}
-	assert el.to_elisp(d) == el.make_alist(d)
-	assert el.to_elisp(d, dict_format='plist') == el.make_plist(d)
-
-	# Should leave existing exprs unchanged
-	for n in EXPRS:
-		assert el.to_elisp(n) == n
+	def test_str(self):
+		assert list(map(str, LITERALS)) == ['0', '1', '-1', '0.0', '1.0', '"foo"', '"bar"', '""']
 
 
-def test_symbol_call():
-	"""Test that calling a symbol creates a function call."""
-	assert el.Symbol('+')(1, 2) == el.el_list([el.Symbol('+'), 1, 2])
+class TestSymbol:
+
+	def test_eq(self):
+		check_pw_equality(SYMBOLS)
+
+		for s in SYMBOLS:
+			assert s == el.Symbol(s.name)
+
+	def test_str(self):
+		assert list(map(str, SYMBOLS)) == ['nil', 'foo', ':foo', '+']
+
+	def test_call(self):
+		"""Test that calling a symbol creates a function call."""
+		assert el.Symbol('+')(1, 2) == el.el_list([el.Symbol('+'), 1, 2])
 
 
-def test_str():
-	"""Test conversion to str."""
-	assert list(map(str, SYMBOLS)) == ['nil', 'foo', ':foo', '+']
+class TestCons:
 
-	assert list(map(str, LITERALS)) == ['0', '1', '-1', '0.0', '1.0', '"foo"', '"bar"', '""']
+	def test_eq(self):
+		check_pw_equality(CONS)
 
-	assert str(el.el_list([1, el.Symbol('a'), "b"])) == '(1 a "b")'
+		for c in CONS:
+			assert c == el.Cons(c.car, c.cdr)
 
-	assert str(el.cons(el.Symbol('a'), 1)) == '(cons a 1)'
-	assert str(el.Quote(el.cons(el.Symbol('a'), 1))) == '\'(a . 1)'
-
-	assert str(el.Quote(el.Symbol('foo'))) == '\'foo'
-	assert str(el.Quote(el.el_list([1, el.Symbol('a'), "b"]))) == '\'(1 a "b")'
-
-	assert str(el.Raw('(+ 1 2)')) == '(+ 1 2)'
+	def test_str(self):
+		assert str(el.cons(el.Symbol('a'), 1)) == '(cons a 1)'
+		assert str(el.Quote(el.cons(el.Symbol('a'), 1))) == '\'(a . 1)'
 
 
-def test_quote():
-	"""Test quote() function."""
-	sym = el.Symbol('a')
-	assert el.quote(sym) == el.Quote(sym)
-	assert el.quote('a') == el.Quote(sym)
+class TestList:
 
-	l = el.el_list([1, 2, 3])
-	assert el.quote(l) == el.Quote(l)
+	def test_eq(self):
+		check_pw_equality(LISTS)
 
+		for l in LISTS:
+			assert l == el.List(l.items)
 
-def test_symbol():
-	"""Test the symbol() function."""
-	sym = el.Symbol('a')
-	assert el.symbol(sym) == sym
-	assert el.symbol(sym.name) == sym
-
-	with pytest.raises(TypeError):
-		el.symbol(0)
+	def test_str(self):
+		assert str(el.el_list([1, el.Symbol('a'), "b"])) == '(1 a "b")'
 
 
-def test_symbols():
-	"""Test the symbols() function."""
-	syms = el.symbols('a', 'b', 'c')
-	assert syms == el.List(list(map(el.Symbol, 'abc')))
-	assert el.symbols('a', 'b', 'c', quote=True) == el.Quote(syms)
+class TestQuote:
+
+	def test_eq(self):
+		check_pw_equality(QUOTES)
+
+		for q in QUOTES:
+			assert q == el.Quote(q.expr)
+			assert q != q.expr
+
+	def test_str(self):
+		assert str(el.Quote(el.Symbol('foo'))) == '\'foo'
+		assert str(el.Quote(el.el_list([1, el.Symbol('a'), "b"]))) == '\'(1 a "b")'
 
 
-def test_make_alist():
-	"""Test the make_alist() function."""
-	d = {'a': 1, 'b': ('foo', el.Symbol('bar')), 42: True}
-	assert el.make_alist(d) == el.List([
-		el.Cons(el.Symbol('a'), el.Literal(1)),
-		el.Cons(el.Symbol('b'), el.to_elisp(d['b'])),
-		el.Cons(el.Literal(42), el.el_true),
-	])
-	assert el.make_alist(d, quote=True) == el.Quote(el.make_alist(d))
+class TestRaw:
 
+	def test_eq(self):
+		check_pw_equality(RAW)
 
-def test_make_plist():
-	"""Test the make_plist() function."""
-	d = {'a': "foo", 'b': (1, 2, 3), 'c': True}
-	assert el.make_plist(d) == el.List([
-		el.Symbol('a'), el.Literal("foo"),
-		el.Symbol('b'), el.to_elisp(d['b']),
-		el.Symbol('c'), el.el_true,
-	])
-	assert el.make_plist(d, quote=True) == el.Quote(el.make_plist(d))
+	def test_str(self):
+		assert str(el.Raw('(+ 1 2)')) == '(+ 1 2)'
