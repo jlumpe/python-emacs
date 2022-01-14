@@ -99,3 +99,20 @@ def test_make_plist():
 		el.Symbol('c'), el.el_true,
 	])
 	assert el.make_plist(d, quote=True) == el.Quote(el.make_plist(d))
+
+
+def test_let():
+	assignments = dict(x=1, foo_bar=2)
+	body = [
+		el.funccall('setq', el.symbol('foo-bar'), 3),
+		el.funccall('+', el.symbol('x'), el.symbol('foo-bar'))
+	]
+	expr = el.let(assignments, *body)
+
+	assert isinstance(expr, el.List)
+	assert expr.items[0] == el.symbol('let')
+	assert expr.items[1] == el.List([
+		el.List([el.Symbol('x'), el.Literal(1)]),
+		el.List([el.Symbol('foo-bar'), el.Literal(2)]),
+	])
+	assert list(expr.items[2:]) == body

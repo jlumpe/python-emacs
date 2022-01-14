@@ -245,3 +245,20 @@ def get_src(src: StrOrExprOrList) -> Expr:
 			raise TypeError(f'Statements must be instances of str or Expr, got {type(x).__name__}')
 
 	return Symbol('progn')(*exprs)
+
+
+def let(assignments, *body) -> List:
+	"""Make a "let" expression.
+
+	Parameters
+	----------
+	assignments
+		Mapping from variable names (as symbols or strings) to values.
+	body
+		Expressions to add to body.
+	"""
+	varlist = List([
+		List([symbol(snake_to_kebab(k)), to_elisp(v)])
+		for k, v in assignments.items()
+	])
+	return funccall('let', varlist, *body)
