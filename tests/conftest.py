@@ -7,7 +7,7 @@ from emacs import Emacs
 
 
 SERVER_NAME = 'pytest'
-DAEMON_ARGS = ['-Q', '--fg-daemon=' + SERVER_NAME]
+DAEMON_ARGS = ['-Q', f'--fg-daemon={SERVER_NAME}']
 
 
 def make_batch():
@@ -20,21 +20,32 @@ def make_client():
 @pytest.fixture(scope='module')
 def daemon():
 	"""An emacs daemon process that is kept alive for the duration of the test(s)."""
-	proc = sp.Popen(['emacs', *DAEMON_ARGS])
+	proc = sp.Popen(['emacs', *DAEMON_ARGS], stdout=sp.PIPE, stderr=sp.PIPE)
 
 	# Allow some time to start up
 	time.sleep(1)
 
-	assert proc.poll() is None
 	try:
+		assert proc.poll() is None, 'Daemon failed to start'
+
 		yield proc
 
-	finally:
 		# Should still be running
-		assert proc.poll() is None
+		assert proc.poll() is None, 'Daemon exited prematurely'
+
+	finally:
 		# Quit
 		proc.terminate()
 		proc.wait()
+
+		# Log daemon output - by default only shown on test failure
+		stdout = proc.stdout.read().decode()
+		print('Emacs daemon stdout:')
+		print(stdout.strip())
+
+		stderr = proc.stderr.read().decode()
+		print('Emacs daemon stderr:')
+		print(stderr.strip())
 
 
 @pytest.fixture()
