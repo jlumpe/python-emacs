@@ -75,7 +75,10 @@ class Symbol(Expr):
 		return self.name.startswith(':') or self.name in ('nil', 't')
 
 	def __call__(self, *args, **kwargs) -> 'List':
-		"""Produce a function call expression from this symbol."""
+		"""Produce a function call expression from this symbol.
+
+		See :func:`emacs.elisp.ast.funccall`.
+		"""
 		from .exprs import funccall
 		return funccall(self, *args, **kwargs)
 
@@ -106,7 +109,7 @@ class Cons(Expr):
 
 
 class List(Expr):
-	"""A list...
+	"""An Elisp list expression.
 
 	Attributes
 	----------

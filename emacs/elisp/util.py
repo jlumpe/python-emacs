@@ -76,9 +76,9 @@ def unescape_emacs_string(s: str, quotes: bool = False) -> str:
 
 	Important: this requires the Emacs variables ``print-escape-newlines`` and
 	``print-escape-control-characters`` be set to ``t`` for certain control and whitespace
-	characters to be escaped properly. See `here docpage`_ for more information.
+	characters to be escaped properly. See `here`__ for more information.
 
-	.. _docpage https://www.gnu.org/software/emacs/manual/html_node/elisp/Output-Variables.html
+	__ https://www.gnu.org/software/emacs/manual/html_node/elisp/Output-Variables.html
 
 	Parameters
 	----------

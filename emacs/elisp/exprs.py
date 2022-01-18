@@ -12,10 +12,10 @@ _StrOrExpr = Union[str, Expr]
 StrOrExprOrList = Union[_StrOrExpr, Sequence[_StrOrExpr]]
 
 
-#: The nil symbol
+#: The ``nil`` symbol
 nil = Symbol('nil')
 
-#: The standard representation of True
+#: The standard Elisp representation of True
 el_true = Symbol('t')
 
 
@@ -51,7 +51,7 @@ def to_elisp(value, **kw) -> Expr:
 	* ``int``, ``float``, and ``str`` to literals.
 	* ``tuple`` to unquoted elisp list.
 	* ``list`` to quoted elisp list.
-	* ``dict`` and other mapping types to either alist or plist, see ``dict_format``.
+	* ``dict`` and other mapping types to either alist or plist, see the ``dict_format`` argument.
 	* :class:`.Expr` instances are returned unchanged.
 
 	For compound types, their contents are recursively converted as well.
@@ -134,7 +134,7 @@ def funccall(f: Union[str, Symbol], *args, **kw):
 	f
 		Function name or symbol
 	args
-		Function arguments. Will be converter to Elisp expressions if necessary.
+		Function arguments. Will be converted to Elisp expressions if necessary.
 	kw
 		Keyword arguments. Argument names are converted like ``my_num=1`` -> ``:my-num 1``.
 	"""
