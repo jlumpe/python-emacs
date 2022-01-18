@@ -68,8 +68,9 @@ class TestCons:
 			assert c == el.Cons(c.car, c.cdr)
 
 	def test_str(self):
-		assert str(el.cons(el.Symbol('a'), 1)) == '(cons a 1)'
-		assert str(el.Quote(el.cons(el.Symbol('a'), 1))) == '\'(a . 1)'
+		c = el.cons(el.Symbol('a'), 1)
+		assert str(c) == '(cons a 1)'
+		assert str(c.q) == '\'(a . 1)'
 
 
 class TestList:

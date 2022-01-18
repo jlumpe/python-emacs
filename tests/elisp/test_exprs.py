@@ -33,13 +33,12 @@ def test_to_elisp():
 		assert el.to_elisp(expr) is expr
 
 
-def test_quote():
+def test_quoting():
 	sym = el.Symbol('a')
-	assert el.quote(sym) == el.Quote(sym)
-	assert el.quote('a') == el.Quote(sym)
+	assert sym.quote() == sym.q == el.Quote(sym)
 
 	l = el.el_list([1, 2, 3])
-	assert el.quote(l) == el.Quote(l)
+	assert l.quote() == el.Quote(l)
 
 
 def test_symbol():
@@ -54,7 +53,6 @@ def test_symbol():
 def test_symbols():
 	syms = el.symbols('a', 'b', 'c')
 	assert syms == el.List(list(map(el.Symbol, 'abc')))
-	assert el.symbols('a', 'b', 'c', quote=True) == el.Quote(syms)
 
 
 def test_funccall():
@@ -87,7 +85,6 @@ def test_make_alist():
 		el.Cons(el.Symbol('b'), el.to_elisp(d['b'])),
 		el.Cons(el.Literal(42), el.el_true),
 	])
-	assert el.make_alist(d, quote=True) == el.Quote(el.make_alist(d))
 
 
 def test_make_plist():
@@ -98,7 +95,6 @@ def test_make_plist():
 		el.Symbol('b'), el.to_elisp(d['b']),
 		el.Symbol('c'), el.el_true,
 	])
-	assert el.make_plist(d, quote=True) == el.Quote(el.make_plist(d))
 
 
 def test_let():

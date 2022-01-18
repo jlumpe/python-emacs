@@ -4,7 +4,7 @@ God help us all.
 """
 
 from .ast import Expr, Symbol, Raw
-from .exprs import to_elisp, quote, symbols, cons
+from .exprs import to_elisp, symbols, cons
 from .util import snake_to_kebab
 
 
@@ -27,7 +27,6 @@ class ElispDSL:
 		"""Calling as function converts value."""
 		return to_elisp(value)
 
-	Q = staticmethod(quote)
 	C = staticmethod(cons)
 	S = staticmethod(symbols)
 	R = staticmethod(Raw)

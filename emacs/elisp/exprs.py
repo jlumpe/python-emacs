@@ -90,24 +90,6 @@ def _mapping_to_elisp(value, **kw):
 	raise ValueError('Invalid value for dict_format argument: %r' % fmt)
 
 
-def quote(expr: Union[str, Expr], **kw) -> Quote:
-	"""Quote expression, converting Python strings to symbols.
-
-	Parameters
-	----------
-	expr
-		Elisp expression or symbol name to quote.
-	kw
-		Keyword arguments passed to :func:`.to_elisp` if value needs to be converted.
-	"""
-	if isinstance(expr, str):
-		expr = Symbol(expr)
-	else:
-		expr = to_elisp(expr, **kw)
-
-	return Quote(expr)
-
-
 def symbol(name: Union[str, Symbol]) -> Symbol:
 	"""Convert argument to symbol."""
 	if isinstance(name, str):
@@ -118,18 +100,15 @@ def symbol(name: Union[str, Symbol]) -> Symbol:
 		raise TypeError('Expected str or Symbol, got %s' % type(name).__name__)
 
 
-def symbols(*names: Union[str, Symbol], quote: bool = False) -> Expr:
+def symbols(*names: Union[str, Symbol]) -> Expr:
 	"""Create an Elisp list of symbols.
 
 	Parameters
 	----------
 	names
 		Symbol names.
-	quote
-		Whether quote the resulting list.
 	"""
-	l = List([symbol(name) for name in names])
-	return Quote(l) if quote else l
+	return List([symbol(name) for name in names])
 
 
 def cons(car, cdr, *, convert_kw=None) -> Cons:
@@ -181,7 +160,7 @@ def _convert_pairs(pairs, kw) -> PyList[Tuple[Expr, Expr]]:
 	return l
 
 
-def make_alist(pairs: Union[Mapping, Iterable[Tuple]], quote: bool = False, **kw) -> Expr:
+def make_alist(pairs: Union[Mapping, Iterable[Tuple]], **kw) -> Expr:
 	"""Create an alist expression from a set of key-value pairs.
 
 	Parameters
@@ -193,24 +172,20 @@ def make_alist(pairs: Union[Mapping, Iterable[Tuple]], quote: bool = False, **kw
 	kw
 		Keyword arguments passed to :func:`to_elisp` to convert mapping values.
 	"""
-	alist = List([Cons(key, value) for key, value in _convert_pairs(pairs, kw)])
-	return Quote(alist) if quote else alist
+	return List([Cons(key, value) for key, value in _convert_pairs(pairs, kw)])
 
 
-def make_plist(pairs: Union[Mapping, Tuple[Any, Any]], quote: bool = False, **kw) -> Expr:
+def make_plist(pairs: Union[Mapping, Tuple[Any, Any]], **kw) -> Expr:
 	"""Create a plist expression from a set of key-value pairs.
 
 	Parameters
 	----------
 	pairs
 		Key-value pairs as a dict or collections of 2-tuples.
-	quote
-		Quote the resulting expression.
 	kw
 		Keyword arguments passed to :func:`to_elisp` to convert mapping values.
 	"""
-	plist = List([x for kv in _convert_pairs(pairs, kw) for x in kv])
-	return Quote(plist) if quote else plist
+	return List([x for kv in _convert_pairs(pairs, kw) for x in kv])
 
 
 def get_src(src: StrOrExprOrList) -> Expr:

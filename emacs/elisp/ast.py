@@ -12,6 +12,15 @@ class Expr:
 		"""Render the expression as elisp code."""
 		raise NotImplementedError()
 
+	def quote(self) -> 'Expr':
+		"""Return a quoted form of this expression."""
+		return Quote(self)
+
+	@property
+	def q(self):
+		"""Shortcut for ``self.quote()``."""
+		return self.quote()
+
 	def __repr__(self):
 		return '<el %s>' % self
 
