@@ -2,31 +2,34 @@ Python API
 **********
 
 
-Interface
-=========
+Emacs interface
+===============
 
 .. automodule:: emacs.emacs
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 
 Elisp Expressions
 =================
 
-Abstract Syntax Trees
----------------------
+AST Classes
+-----------
 
 .. automodule:: emacs.elisp.ast
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+
+Creating expressions
+--------------------
+
+.. automodule:: emacs.elisp.exprs
 
 
 DSL
 ---
 
 .. automodule:: emacs.elisp.dsl
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+
+Misc
+----
+
+.. automodule:: emacs.elisp.util

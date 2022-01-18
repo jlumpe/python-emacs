@@ -42,7 +42,6 @@ extensions = [
 master_doc = 'index'
 
 doctest_global_setup = '''
-from emacs import Emacs, EmacsException
 import emacs.elisp as el
 from emacs.elisp import E
 '''
@@ -72,3 +71,17 @@ html_theme = 'alabaster'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+
+# -- Extension options -------------------------------------------------------
+
+autodoc_default_options = {
+	'members': True,
+	'show-inheritance': True,
+}
+
+autodoc_class_signature = 'separated'
+autodoc_member_order = 'groupwise'
+autodoc_typehints = 'description'
+
+todo_include_todos = True
