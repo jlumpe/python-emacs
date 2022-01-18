@@ -63,7 +63,7 @@ class Symbol(Expr):
 
 	@property
 	def isconst(self) -> bool:
-		return self.name.startswith(':') or self.name == 'nil'
+		return self.name.startswith(':') or self.name in ('nil', 't')
 
 	def __call__(self, *args, **kwargs) -> 'List':
 		"""Produce a function call expression from this symbol."""

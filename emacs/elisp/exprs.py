@@ -16,7 +16,7 @@ StrOrExprOrList = Union[_StrOrExpr, Sequence[_StrOrExpr]]
 nil = Symbol('nil')
 
 #: The standard representation of True
-el_true = Quote(Symbol('t'))
+el_true = Symbol('t')
 
 
 def el_bool(value: bool) -> Expr:
