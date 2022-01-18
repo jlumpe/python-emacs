@@ -17,7 +17,7 @@ def make_client():
 	return EmacsClient(server=SERVER_NAME)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture()
 def daemon():
 	"""An emacs daemon process that is kept alive for the duration of the test(s)."""
 	proc = sp.Popen(['emacs', *DAEMON_ARGS], stdout=sp.PIPE, stderr=sp.PIPE)
