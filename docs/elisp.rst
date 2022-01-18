@@ -1,23 +1,47 @@
+Manipulating Elisp code in Python
+=================================
+
+The :mod:`emacs.elisp` module contains utilities for building and manipulating Emacs Lisp (Elisp)
+expressions in Python. These can then be passed to an :class:`~emacs.emacs.Emacs` instance to be
+executed.
+
+
+Expr Objects
+------------
+
 .. py:currentmodule:: emacs.elisp.ast
 
+Elisp expressions are represented by subtypes of the :class:`Expr` abstract base class:
 
-Representing Emacs lisp code in Python
-======================================
+* :class:`Literal`\ ``(value)`` wraps Python ``int``\ s, ``str``\ s, and ``float``\ s.
+* :class:`Symbol` \ ``(name: str)`` represents a symbol.
+* :class:`Cons`\ ``(car: Expr, cdr: Expr)`` represents a cons cell.
+* :class:`List`\ ``(items: Iterable[Expr])`` represents a list.
+* :class:`Quote`\ ``(expr: Expr)`` represents a quoted expression.
+* :class:`Raw`\ ``(src: str)`` can be used to wrap a raw Elisp code string.
 
-The :mod:`emacs.elisp` module contains utilities for representing Emacs lisp
-Abstract Syntax Trees (AST's) as Python objects, see the :class:`Expr`
-abstract class and its subclasses.
+Generally you should use the functions detailed in the following section to build expressions
+rather than instantiating them directly.
+
+You can use ``str(expr)`` to produce (hopefully) syntactically-correct Elisp code.
 
 
-Creating Elisp expressions
+Building Elisp expressions
 --------------------------
 
-The fundamental data type in Elisp is the list. Other data types include symbols
-and self-evaluating types such as strings or numbers.
+.. py:currentmodule:: emacs.elisp.exprs
 
-Use the :func:`to_elisp` function to convert simple Python values to their Elisp
-equivalents. This will wrap numbers and strings as Elisp literals, as well as
-convert bools and None to the correct symbols:
+The :func:`to_elisp` function can be used to convert various Python values to Elisp expressions.
+Elements of composite data types (lists, tuples, dicts) are converted recursively.
+Most parts of this package's API will use :func:`to_elisp` to convert arguments that are not already
+instances of :class:`~emacs.elisp.ast.Expr`, so it is often not necessary to use it directly.
+
+
+Basic data types
+................
+
+:func:`to_elisp` converts numbers and strings to literals and ``bool``\ s and ``None`` to the
+correct symbols:
 
 .. doctest::
 
@@ -41,8 +65,39 @@ convert bools and None to the correct symbols:
    >>> el.to_elisp(None)
    <el nil>
 
+The ``nill`` and ``t`` symbols are also available as :data:`nil` and :data:`el_true`.
 
-Python lists are converted to quoted Elisp lists, while tuples are left unquoted:
+
+Symbols
+.......
+
+Create a symbol with the :func:`symbol` function:
+
+.. doctest::
+
+   >>> el.symbol('foo')
+   <el foo>
+
+The :func:`symbols` function can be used to create a list of symbols:
+
+.. doctest::
+
+   >>> el.symbols('a', 'b', 'c')
+   <el (a b c)>
+
+
+Lists
+.....
+
+:func:`el_list` converts any iterable to a list expression:
+
+.. doctest::
+
+   >>> el.el_list(range(1, 5))
+   <el (1 2 3 4)>
+
+
+:func:`to_elisp` converts Python lists to quoted Elisp lists, while tuples are left unquoted:
 
 .. doctest::
 
@@ -53,109 +108,108 @@ Python lists are converted to quoted Elisp lists, while tuples are left unquoted
    <el ("a" "b" "c")>
 
 
-Python dicts and other mapping types are converted using :func:`make_alist` (see
-below):
+Function calls
+..............
+
+Function call expressions can be created with :func:`funccall`, or by calling a
+:class:`~emacs.elisp.ast.Symbol` instance. Keyword arguments are converted to
+``kebab-case`` and prefixed with a ":" character.
 
 .. doctest::
 
-   >>> el.to_elisp({'a': 1, 'b': 2})
-   <el ((cons a 1) (cons b 2))>
+   >>> el.funccall('+', 1, 2)
+   <el (+ 1 2)>
+
+   >>> foo = el.symbol('foo')
+   >>> foo(el.symbol('x'), el.symbol('y'), kw_arg=123)
+   <el (foo x y :kw-arg 123)>
 
 
-Elements of composite data types (lists, tuples, dicts) are recursively
-converted using :meth:`to_elisp` if they are not already instances of
-:class:`Expr`.
+Quoting
+.......
 
-You can use :func:`quote` to quote a value. It will also convert strings to
-quoted symbols:
+The :meth:`~emacs.elisp.ast.Expr.quote` method produces a quoted version of an
+expression:
 
 .. doctest::
 
-   >>> s = el.Symbol('foo')
-   >>> s
-   <el foo>
-
-   >>> el.quote(s)
+   >>> s = el.symbol('foo')
+   >>> s.quote()
    <el 'foo>
 
-   >>> el.quote('foo')
+   >>> el.symbols('a', 'b', 'c').quote()
+   <el '(a b c)>
+
+The :attr:`~emacs.elisp.ast.Expr.q` property acts as a shortcut:
+
+.. doctest::
+
+   >>> s.q
    <el 'foo>
 
+
+Cons cells
+..........
 
 An expression that must be constructed directly because it has no Python equivalent
-is the cons cell, represented with the class :class:`Cons`:
+is the cons cell, represented with the class :class:`~emacs.elisp.ast.Cons`:
 
 .. doctest::
 
-   >>> el.Cons(el.Symbol('a'), 1)
+   >>> c = el.cons(el.symbol('a'), 1)
+   >>> c
    <el (cons a 1)>
 
-   >>> el.quote(el.Cons(el.Symbol('a'), 1))
+   >>> c.q
    <el '(a . 1)>
 
 
-The :func:`symbols` function can be used to create a list of symbols:
+Mapping formats (alists and plists)
+...................................
+
+You can use :func:`make_alist` or :func:`make_plist` to convert mapping types like ``dict``\ s
+to their Elisp equivalents. These functions will always treat string keys as symbols:
 
 .. doctest::
 
-   >>> el.symbols('a', 'b', 'c')
-   <el (a b c)>
-
-   >>> el.symbols('a', 'b', 'c', quote=True)
-   <el '(a b c)>
-
-
-You can use :func:`make_alist` or :func:`make_plist` to convert common mapping
-types to their Elisp equivalents. These functions will always treat string
-keys as symbols:
-
-.. doctest::
-
-   >>> el.make_alist({'a': 1, 'b': 2}, quote=True)
+   >>> el.make_alist({'a': 1, 'b': 2}).q
    <el '((a . 1) (b . 2))>
 
-   >>> el.make_plist({':x': 1, ':y': 2}, quote=True)
+   >>> el.make_plist({':x': 1, ':y': 2}).q
    <el '(:x 1 :y 2)>
 
 
-Finally, use :class:`Raw` to wrap a raw Elisp code string so that it will just
-be inserted verbatim in the given location:
+:func:`to_elisp` converts mapping types like dicts to plists or alists, depending on
+the value of the ``dict_format`` argument (defaults to ``"alist"``.
+
+
+Raw code strings
+................
+
+Finally, use :class:`~emacs.elisp.ast.Raw` to wrap a raw Elisp code string to be inserted verbatim
+in the given location:
 
 .. doctest::
 
    >>> el.Raw('(print "hi")')
    <el (print "hi")>
 
-
-Using Elisp expressions
------------------------
-
-.. py:currentmodule:: emacs.emacs
-
-
-Elisp expressions can be passed to :meth:`Emacs.eval` and :meth:`Emacs.getresult` for
-execution. You can also convert them to strings to produce (hopefully)
-syntactically-correct Elisp code.
+   >>> el.el_list([1, 2, el.Raw('(+ a b)')])
+   <el (1 2 (+ a b))>
 
 
 Elisp DSL
 ---------
 
-.. py:currentmodule:: emacs.elisp.ast
-
-
-This package also includes an unholy abomination of a DSL that lets you write
-Elisp code in Python. The DSL is implemented through a singleton object which
-is importable as :data:`emacs.elisp.E <emacs.elisp.dsl.E>`::
-
-   >>> from emacs.elisp import E
-
+This package also includes an unholy abomination of a DSL that lets you write Elisp code in Python.
+It is implemented through the singleton object :data:`emacs.elisp.E <emacs.elisp.dsl.E>`.
 
 Calling the singleton as a function converts a Python object into an Elisp object
 using :meth:`to_elisp`:
 
 .. doctest::
 
+   >>> from emacs.elisp import E
    >>> E(3)
    <el 3>
 
@@ -166,8 +220,8 @@ using :meth:`to_elisp`:
    <el '("a" "b" "c")>
 
 
-Attribute access produces Elisp symbols, converting underscores to dashes. The
-same can be done by indexing with a string:
+Attribute access produces Elisp symbols, converting ``snake_case`` to ``kebab-case``. The
+same can be done by indexing with a string (without the case conversion):
 
 .. doctest::
 
@@ -188,15 +242,18 @@ Symbols can be called as functions, generating Elisp function calls:
    >>> E.message("Hello from %s", E('python-emacs'))
    <el (message "Hello from %s" "python-emacs")>
 
+   >>> E['='](E.a, E.b)
+   <el (= a b)>
 
-Additionally, the ``Q``, ``C``, ``S``, and ``R`` methods are aliases for the
-:func:`quote`, :class:`Cons`, :func:`symbols`, and :class:`Raw`, respectively.
+
+Additionally, the ``C``, ``S``, and ``R`` methods are aliases for
+:class:`cons`, :func:`symbols`, and :class:`~emacs.elisp.ast.Raw`, respectively.
 
 Using just the ``E`` object, it is possible to write complex Elisp expressions:
 
 .. doctest::
 
    >>> E.defun(E.my_elisp_function, E.S('a', 'b'),
-   ...   E.message("I shouldn't exist"),
+   ...   E.message("I am a crime against God."),
    ...   E['+'](E.a, E.b))
-   <el (defun my-elisp-function (a b) (message "I shouldn't exist") (+ a b))>
+   <el (defun my-elisp-function (a b) (message "I am a crime against God.") (+ a b))>
