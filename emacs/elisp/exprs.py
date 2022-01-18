@@ -90,14 +90,31 @@ def _mapping_to_elisp(value, **kw):
 	raise ValueError('Invalid value for dict_format argument: %r' % fmt)
 
 
-def symbol(name: Union[str, Symbol]) -> Symbol:
-	"""Convert argument to symbol."""
-	if isinstance(name, str):
-		return Symbol(name)
-	elif isinstance(name, Symbol):
+def symbol(name: Union[str, Symbol], kebab: bool = False, keyword: bool = False) -> Symbol:
+	"""Convert argument to symbol.
+
+	Parameters
+	----------
+	name
+		Symbol name as string. Alternatively, an existing symbol instance which will be returned
+		unchanged.
+	kebab
+		Convert name from ``snake_case`` to ``kebab-case``.
+	keyword
+		Prefix name with ":" character if it doesn't start with it already.
+	"""
+	if isinstance(name, Symbol):
 		return name
-	else:
+
+	if not isinstance(name, str):
 		raise TypeError('Expected str or Symbol, got %s' % type(name).__name__)
+
+	if kebab:
+		name = snake_to_kebab(name)
+	if keyword and not name.startswith(':'):
+		name = ':' + name
+
+	return Symbol(name)
 
 
 def symbols(*names: Union[str, Symbol]) -> Expr:
@@ -141,7 +158,7 @@ def funccall(f: Union[str, Symbol], *args, **kw):
 	items = [symbol(f), *map(to_elisp, args)]
 
 	for key, value in kw.items():
-		s = Symbol(':' + snake_to_kebab(key))
+		s = symbol(key, kebab=True, keyword=True)
 		items.extend([s, to_elisp(value)])
 
 	return List(items)

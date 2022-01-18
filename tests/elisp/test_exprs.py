@@ -42,9 +42,14 @@ def test_quoting():
 
 
 def test_symbol():
-	sym = el.Symbol('a')
+	sym = el.Symbol('foo_bar')
 	assert el.symbol(sym) == sym
 	assert el.symbol(sym.name) == sym
+
+	assert el.symbol(sym.name) == el.Symbol('foo_bar')
+	assert el.symbol(sym.name, kebab=True) == el.Symbol('foo-bar')
+	assert el.symbol(sym.name, keyword=True) == el.Symbol(':foo_bar')
+	assert el.symbol(sym.name, kebab=True, keyword=True) == el.Symbol(':foo-bar')
 
 	with pytest.raises(TypeError):
 		el.symbol(0)
