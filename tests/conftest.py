@@ -1,5 +1,6 @@
 import time
 import subprocess as sp
+from contextlib import contextmanager
 
 import pytest
 
@@ -17,15 +18,13 @@ def make_client():
 	return EmacsClient(server=SERVER_NAME)
 
 
-@pytest.fixture()
-def daemon():
-	"""An emacs daemon process that is kept alive for the duration of the test(s)."""
+@contextmanager
+def daemon_context(startup=.25):
 	proc = sp.Popen(['emacs', *DAEMON_ARGS], stdout=sp.PIPE, stderr=sp.PIPE)
 
-	# Allow some time to start up
-	time.sleep(1)
-
 	try:
+		# Allow some time to start up
+		time.sleep(startup)
 		assert proc.poll() is None, 'Daemon failed to start'
 
 		yield proc
@@ -46,6 +45,13 @@ def daemon():
 		stderr = proc.stderr.read().decode()
 		print('Emacs daemon stderr:')
 		print(stderr.strip())
+
+
+@pytest.fixture()
+def daemon():
+	"""An emacs daemon process that is kept alive for the duration of the test(s)."""
+	with daemon_context() as daemon:
+		yield daemon
 
 
 @pytest.fixture()
