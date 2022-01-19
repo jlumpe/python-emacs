@@ -72,7 +72,7 @@ def escape_emacs_string(s: str, quotes: bool=False) -> str:
 def unescape_emacs_string(s: str, quotes: bool = False) -> str:
 	"""Unescape the representation of a string printed by Emacs.
 
-	This can be used to
+	This can be used to parse string printed using ``prin1``, for example.
 
 	Important: this requires the Emacs variables ``print-escape-newlines`` and
 	``print-escape-control-characters`` be set to ``t`` for certain control and whitespace

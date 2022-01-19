@@ -114,7 +114,7 @@ class List(Expr):
 	Attributes
 	----------
 	items
-		Items in the list
+		Items in the list.
 	"""
 
 	items: Tuple[Expr, ...]
