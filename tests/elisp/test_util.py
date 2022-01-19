@@ -53,7 +53,7 @@ class TestStringEscaping:
 
 		escaped = util.escape_emacs_string(s, quotes=True)
 		src = f'(princ {escaped})'
-		result = batch.eval(src, process=True)
+		result = batch.run(['--eval', src])
 
 		if output_broken:
 			pytest.xfail('Emacs UTF-8 output incorrect for this character range')
@@ -80,8 +80,8 @@ class TestStringEscaping:
 		  (insert-file-contents "{file!s}")
 		  (prin1 (buffer-string)))
 		'''
-		src = el.let(settings, el.Raw(src))
-		result = batch.eval(src, process=True)
+		src = str(el.let(settings, el.Raw(src)))
+		result = batch.run(['--eval', src])
 		out = result.stdout.decode('utf-8')
 
 		assert util.unescape_emacs_string(out, quotes=True) == s
