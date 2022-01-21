@@ -15,8 +15,8 @@ jobs:
         python-version:
           - 3.9
         emacs-version:
-          - 24-5
-          - 25-3
+#          - 24-5
+#          - 25-3
           - 26-3
           - 27-2
           - snapshot
