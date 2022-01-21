@@ -2,7 +2,10 @@
 [![CI](https://github.com/jlumpe/python-emacs/actions/workflows/ci.yml/badge.svg)](https://github.com/jlumpe/python-emacs/actions/workflows/ci.yml)
 [![Documentation Status](https://readthedocs.org/projects/python-emacs/badge/?version=latest)](https://python-emacs.readthedocs.io/en/latest/?badge=latest)
 
-Python interface to GNU Emacs.
+
+This package provides an interface between Python and GNU Emacs. It allows you to easily pass data
+from Python to Emacs, execute Emacs Lisp code, and transfer the resulting data back to Python again.
+It also provides utilities for building Emacs Lisp expressions in Python.
 
 
 ## Installation
@@ -15,34 +18,46 @@ Or directly from the repository:
 
     git clone https://github.com/jlumpe/python-emacs
     cd python-emacs
-    python setup.py install
+    pip install -e .
     
     
 ## Usage
 
-Create an interface to Emacs using either `Emacs.batch()` or `Emacs.client()`. The first runs a new Emacs process in batch mode with every command, the second uses `emacsclient` to communicate with an already-running process.
+Create an interface to Emacs using either `EmacsBatch` or `EmacsClient`. The first runs a new Emacs
+process in batch mode with every command, the second uses `emacsclient` to communicate with a
+running server. Both follow the same API.
 
 ```python-console
->>> from emacs import Emacs
->>> emacs = Emacs.batch(['-q'])
+>>> from emacs import EmacsBatch
+>>> emacs = EmacsBatch(args=['-Q'])  # Don't load user config with each invocation
 ```
 
-Execute some Elisp code and get the output:
+Execute an Elisp expression and get the result:
 
 ```python-console
->>> src = '(princ (format "One plus two is %d" (+ 1 2)))'
+>>> emacs.eval('(+ 1 2)')
+3
+
+>>> emacs.eval('(format "One plus two is %d" (+ 1 2))')
+'One plus two is 3'
+
+>>> src = '''
+... (progn
+...   (require 'cl)
+...   (cl-loop
+...     for i in '(1 2 3 4 5)
+...     collect (* i i)))
+... '''
+
 >>> emacs.eval(src)
-'One plus two is 3'
+[1, 4, 9, 16, 25]
 ```
 
-Get the result of an expression as a Python value:
+Evaluation errors are caught in Emacs and raised in Python:
 
 ```python-console
->>> emacs.getresult('(format "One plus two is %d" (+ 1 2))')
-'One plus two is 3'
-
->>> emacs.getresult('(cl-loop for i in \'(1 2 3 4 5) collect (* i i))')
-[1, 4, 9, 16, 25]
+>>> emacs.eval('(+ 1 "foo")')
+ElispException: Wrong type argument: number-or-marker-p, "foo"
 ```
 
 
@@ -55,7 +70,7 @@ Get the result of an expression as a Python value:
 >>> src
 <el (format "One plus two is %d" (+ 1 2))>
 
->>> emacs.getresult(src)
+>>> emacs.eval(src)
 'One plus two is 3'
 ```
 
@@ -64,14 +79,16 @@ Using a terrible DSL:
 ```python-console
 >>> from emacs.elisp import E
 
->>> prog = E.dolist((E.i, E.number_sequence(1, 20)),
-      E.princ(E.i),
-      E.when(E['='](E['%'](E.i, 3), 0), E.princ("fizz")),
-      E.when(E['='](E['%'](E.i, 5), 0), E.princ("buzz")),
-      E.princ('\n'),
-    )
+>>> prog = E.with_output_to_string(
+      E.dolist(
+        (E.i, E.number_sequence(1, 20)),
+        E.princ(E.i),
+        E.when(E['='](E['%'](E.i, 3), 0), E.princ("fizz")),
+        E.when(E['='](E['%'](E.i, 5), 0), E.princ("buzz")),
+        E.princ('\n')))
+
 >>> prog
-<el (dolist (i (number-sequence 1 20)) (princ i) (when (= (% i 3) 0) (princ "fizz")) (when (= (% i 5) 0) (princ "buzz")) (princ "\n"))>
+<el (with-output-to-string (dolist (i (number-sequence 1 20)) (princ i) (when (= (% i 3) 0) (princ "fizz")) (when (= (% i 5) 0) (princ "buzz")) (princ "\n")))>
 
 >>> print(emacs.eval(prog))
 1
