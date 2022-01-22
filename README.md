@@ -13,14 +13,14 @@ It also provides utilities for building Emacs Lisp expressions in Python.
 Install using pip:
 
     pip install python-emacs
-    
+
 Or directly from the repository:
 
     git clone https://github.com/jlumpe/python-emacs
     cd python-emacs
-    pip install -e .
-    
-    
+    pip install .
+
+
 ## Usage
 
 Create an interface to Emacs using either `EmacsBatch` or `EmacsClient`. The first runs a new Emacs
