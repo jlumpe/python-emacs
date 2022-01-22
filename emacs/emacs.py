@@ -335,19 +335,17 @@ class EmacsBatch(EmacsBase):
 	Parameters
 	----------
 	cmd
-		Base command to run. Name or path of emacs executable plus optionally any additional
-		arguments.
+		Base command to run. Name or path of emacs executable.
 	args
 		Additional arguments to add to ``cmd``.
 	"""
 
 	def __init__(self,
-	             cmd: Union[str, Sequence[str]] = 'emacs',
+	             cmd: str = 'emacs',
 	             *,
 	             args: Optional[Sequence[str]] = None,
 	             logger: Optional[logging.Logger] = None,
 	             ):
-
 		cmd = make_cmd(cmd, '--batch', args)
 		EmacsBase.__init__(self, cmd, logger)
 
@@ -364,8 +362,7 @@ class EmacsClient(EmacsBase):
 	Parameters
 	----------
 	cmd
-		Base command to run. Name or path of emacsclient executable plus optionally any additional
-		arguments.
+		Base command to run. Name or path of emacsclient executable.
 	args
 		Additional arguments to add to ``cmd``.
 	server
@@ -373,13 +370,12 @@ class EmacsClient(EmacsBase):
 	"""
 
 	def __init__(self,
-	             cmd: Union[str, Sequence[str]] = 'emacsclient',
+	             cmd: str = 'emacsclient',
 	             *,
 	             args: Optional[Sequence[str]] = None,
 	             server: Optional[str] = None,
 	             logger: Optional[logging.Logger] = None,
 	             ):
-
 		cmd = make_cmd(cmd, ['-s', server] if server is not None else None, args)
 		EmacsBase.__init__(self, cmd, logger)
 
