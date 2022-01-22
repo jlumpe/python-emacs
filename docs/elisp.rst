@@ -2,8 +2,8 @@ Manipulating Elisp code in Python
 =================================
 
 The :mod:`emacs.elisp` module contains utilities for building and manipulating Emacs Lisp (Elisp)
-expressions in Python. These can then be passed to an :class:`~emacs.emacs.Emacs` instance to be
-executed.
+expressions in Python. These can then be passed to an :class:`~emacs.emacs.EmacsBatch` or
+:class:`~emacs.emacs.EmacsClient` instance to be executed.
 
 
 Expr Objects
@@ -14,7 +14,7 @@ Expr Objects
 Elisp expressions are represented by subtypes of the :class:`Expr` abstract base class:
 
 * :class:`Literal`\ ``(value)`` wraps Python ``int``\ s, ``str``\ s, and ``float``\ s.
-* :class:`Symbol` \ ``(name: str)`` represents a symbol.
+* :class:`Symbol`\ ``(name: str)`` represents a symbol.
 * :class:`Cons`\ ``(car: Expr, cdr: Expr)`` represents a cons cell.
 * :class:`List`\ ``(items: Iterable[Expr])`` represents a list.
 * :class:`Quote`\ ``(expr: Expr)`` represents a quoted expression.

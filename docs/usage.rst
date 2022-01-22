@@ -4,54 +4,69 @@
 Basic usage
 ===========
 
-Most of the functionality in this package is implemented in the :class:`Emacs`
-class, which represents an interface into the Emacs program.
+Most of the functionality in this package is implemented in the :class:`EmacsBatch` and
+:class:`EmacsClient` classes, which allow you to evaluate Emacs Lisp code and get the result in
+Python. Both inherit from :class:`EmacsBase` and share the same API.
 
 
-Instantiating the Emacs interface
----------------------------------
+EmacsBatch
+----------
 
-You should generally create the :class:`Emacs` object using one of the following
-two class methods rather than invoking the constructor directly.
+:class:`EmacsBatch` runs ``emacs --batch`` with each invocation. The ``args`` constructor argument
+is a list of additional command line arguments to add. It is often a good idea to use the ``-Q``
+option to avoid loading personal configuration files each time, which can slow things down.
 
-If you create the object with :meth:`Emacs.batch`, it will start a new Emacs
-process with the ``--batch`` argument each time you run a command or evaluate
-Elisp code. This will be slow if your ``init.el`` file takes a while to execute.
+.. doctest::
 
-Alternatively, :meth:`Emacs.client` will create an instance which connects to
-an already-running Emacs process using the ``emacsclient`` program. This should
-make most commands run much faster. If you use this method make sure to start
-the server in Emacs using ``(server-start)``.
+   >>> from emacs import EmacsBatch
+   >>> emacs = EmacsBatch(args=['-Q'])
 
 
-Low-level interface
--------------------
+EmacsClient
+-----------
 
-At the lowest level, you can call the :meth:`Emacs.run` or
-:meth:`Emacs.getoutput` methods to invoke the program with the given list of
-command line arguments. The difference between the two is that
-:meth:`Emacs.getoutput` returns the value of stdout as a string while
-:meth:`Emacs.run` returns an entire :class:`subprocess.CompletedProcess`
-instance.
+:class:`EmacsClient` uses the ``emacsclient`` command to connect to and execute code in a running
+Emacs server. A server can be started in a running Emacs process by calling
+``(server-start <server-name>)``. Alternatively you can start a daemon server with
+``emacs --daemon=<server-name>``.
+
+::
+
+   >>> from emacs import EmacsClient
+   >>> emacs = EmacsClient(server="my-server")   # doctest: +SKIP
 
 
 Executing Emacs lisp code
 -------------------------
 
-The main job of :class:`Emacs` is to execute elisp code.
-You can do this using the :meth:`Emacs.eval` method::
+The main job of the interface is to execute elisp code. You can do this using the :meth:`EmacsBase.eval`
+method:
 
-    >>> emacs = Emacs.batch()
-    >>> emacs.eval('(print "Hello world!")')
-    '\n"Hello world!"\n'
+.. doctest::
 
-This method records the output from stdout and returns it as a string.
+   >>> emacs.eval('(+ 1 2)')
+   3
 
-Alternatively, you can use the :meth:`Emacs.getresult` method which returns the
-result of the execution as a Python value::
+The source code can be passed in as a string, or you can build an Elisp expression using the
+:mod:`emacs.elisp` subpackage. This allows you to easily pass in data from Python:
 
-    >>> emacs.getresult('(+ 1 2)')
-    3
+.. doctest::
+
+   >>> import emacs.elisp as el
+   >>> def emacs_add(a, b):
+   ...     expr = el.funccall('+', a, b)
+   ...     return emacs.eval(expr)
+   >>> emacs_add(1, 2)
+   3
 
 Note that it does this by converting the value to JSON in Emacs and then decoding
 it in Python, so the value must be json-encodable.
+
+Errors in evaluating the expression are caught in Emacs (see the ``catch_errors`` argument to
+:func:`EmacsBase.eval`) and raised as an :exc:`~emacs.emacs.ElispException` in Python:
+
+.. doctest::
+
+   >>> emacs_add(1, "foo")
+   Traceback (most recent call last):
+   ElispException: Wrong type argument: number-or-marker-p, "foo"

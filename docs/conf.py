@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'python-emacs'
-copyright = '2019, Jared Lumpe'
+copyright = '2022, Jared Lumpe'
 author = 'Jared Lumpe'
 
 # The full version, including alpha/beta/rc tags

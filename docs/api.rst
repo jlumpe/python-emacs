@@ -11,6 +11,9 @@ Emacs interface
 Elisp Expressions
 =================
 
+.. automodule:: emacs.elisp
+
+
 AST Classes
 -----------
 
