@@ -128,3 +128,9 @@ class TestEmacsBatch:
 
 class TestEmacsClient:
 	"""Tests specific to EmacsClient class."""
+
+	def test_persistence(self, client):
+		"""Test variable definitions persist in daemon through multiple calls."""
+		client.eval(E.setq(E.x, "foo"))
+		client.eval(E.setq(E.y, "bar"))
+		assert client.eval(E.concat(E.x, E.y)) == "foobar"
