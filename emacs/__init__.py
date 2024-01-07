@@ -1,8 +1,6 @@
 """Python interface to GNU Emacs."""
 
-__author__ = 'Jared Lumpe'
-__email__ = 'mjlumpe@gmail.com'
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 
 from .emacs import EmacsBatch, EmacsClient, ElispException
