@@ -24,7 +24,7 @@ jobs:
           # Current Python with other Emacs
           - { python-vesion: 3.12, emacs-version: 26-3 }
           - { python-vesion: 3.12, emacs-version: 27-2 }
-          - { python-vesion: 3.12, emacs-version: 28-3 }
+          - { python-vesion: 3.12, emacs-version: 28-2 }
           - { python-vesion: 3.12, emacs-version: snapshot }
 
     steps:
