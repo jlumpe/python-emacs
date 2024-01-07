@@ -12,19 +12,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version:
-          - 3.9
-        emacs-version:
-#          - 24-5
-#          - 25-3
-          - 26-3
-          - 27-2
-          - snapshot
-        # Test older Python versions only with newest version of Emacs
         include:
-          - { emacs-version: 27-2, python-version: 3.6 }
-          - { emacs-version: 27-2, python-version: 3.7 }
-          - { emacs-version: 27-2, python-version: 3.8 }
+          # All Python versions with current Emacs
+          - { python-vesion: 3.6,  emacs-version: 29-1 }
+          - { python-vesion: 3.7,  emacs-version: 29-1 }
+          - { python-vesion: 3.8,  emacs-version: 29-1 }
+          - { python-vesion: 3.9,  emacs-version: 29-1 }
+          - { python-vesion: 3.10, emacs-version: 29-1 }
+          - { python-vesion: 3.11, emacs-version: 29-1 }
+          - { python-vesion: 3.12, emacs-version: 29-1 }
+          # Current Python with other Emacs
+          - { python-vesion: 3.12, emacs-version: 26-3 }
+          - { python-vesion: 3.12, emacs-version: 27-2 }
+          - { python-vesion: 3.12, emacs-version: 28-3 }
+          - { python-vesion: 3.12, emacs-version: snapshot }
 
     steps:
     - uses: actions/checkout@v2
